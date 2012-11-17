@@ -40,8 +40,10 @@ public:
 
     void save (const char* filename);
 
-private:
+public:
     int xres, yres;
+
+private:
     std::vector<Pixel> data;
 
     void save_png (const char* filename);

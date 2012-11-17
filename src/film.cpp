@@ -27,12 +27,15 @@ void Film::save_png (const char* filename)
     tone_mapping();
     std::vector<uint8_t> rgb(xres*yres*3);
 
-    for (int i = 0; i < xres*yres; i++) {
-//         Spectrum L = data[i].normalized();
-        Spectrum L = data[i].tonemapped;
-        L = clamp(L*255.0f, Spectrum(0), Spectrum(255));
-        for (int k = 0; k < 3; k++) {
-            rgb[i*3+k] = L[k];
+    for (int y = 0; y < yres; y++) {
+        for (int x = 0; x < xres; x++) {
+            int i = x + y*xres;
+            int o = x + (yres-1-y)*xres;
+            Spectrum L = data[i].tonemapped;
+            L = clamp(L*255.0f, Spectrum(0), Spectrum(255));
+            for (int k = 0; k < 3; k++) {
+                rgb[o*3+k] = L[k];
+            }
         }
     }
 
