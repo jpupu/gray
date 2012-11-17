@@ -24,16 +24,17 @@ struct Isect
     vec3 n;
 };
 
+
 class Sphere
 {
 public:
-    bool intersect (const Ray& r, Isect* isect);
+    bool intersect (const Ray& r, Isect* isect, const Transform& world_from_object);
 };
 
-bool Sphere::intersect (const Ray& r, Isect* isect)
+bool Sphere::intersect (const Ray& ray, Isect* isect, const Transform& world_from_object)
 {
-    vec3 d = r.d;
-    vec3 o = r.o;
+    vec3 o = inverse(world_from_object).point(ray.o);
+    vec3 d = inverse(world_from_object).vector(ray.d);
 
     float A = dot(d, d);
     float B = 2 * dot(d, o);
@@ -50,21 +51,34 @@ bool Sphere::intersect (const Ray& r, Isect* isect)
     float t1 = (-B + sqrtf(discrim)) / (2*A);
     if (t0 > t1) std::swap(t0, t1);
 
-    float t = (t0 >= r.tmin) ? t0 : t1;
-    if (t < r.tmin || t > r.tmax) return false;
+    float t = (t0 >= ray.tmin) ? t0 : t1;
+    if (t < ray.tmin || t > ray.tmax) return false;
 
     isect->t = t;
-    isect->p = o + t*d;
-    isect->n = normalize(isect->p);
-    // probably should normalize p also to improve precision, or
-    // not normalize n, as it should be good as-is. I dunno, maybe
-    // this is fine.
+    isect->p = ray.o + t*ray.d;
+    isect->n = world_from_object.normal(normalize(o+t*d));
 
     return true;
 }
 
+class Material
+{
+public:
+    Spectrum R;
+};
 
+class Surface
+{
+public:
+    Material* mat;
+    Sphere* shape;
+    Transform world_from_object;
 
+    bool intersect (const Ray& r, Isect* isect)
+    {
+        return shape->intersect(r, isect, world_from_object);
+    }
+};
 
 
 
@@ -79,7 +93,9 @@ int main (int argc, char* argv[])
 {
     Film film(256,256);
 
-    Sphere sp;
+    Material mat1 = { Spectrum(1.0f, 0.0f, .5f) };
+    Sphere sp1;
+    Surface surf1 = { &mat1, &sp1, Transform::rotate(90, vec3(0,1,0)) };
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
@@ -93,8 +109,9 @@ int main (int argc, char* argv[])
             Isect isect;
             Spectrum L(0.0f);
 
-            if (sp.intersect(ray, &isect)) {
-                L = vec3(clamp(dot(isect.n, normalize(vec3(-1,1,1))), 0.0f, 1.0f));
+            if (surf1.intersect(ray, &isect)) {
+                float f = clamp(dot(isect.n, normalize(vec3(-1,1,1))), 0.0f, 1.0f);
+                L = surf1.mat->R * f;
             }
 
             film.add_sample(xf,yf, L);
