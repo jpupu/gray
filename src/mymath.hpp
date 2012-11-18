@@ -11,4 +11,6 @@ using glm::cross;
 using glm::normalize;
 using glm::clamp;
 
+#define M_2PI (2*M_PI)
+
 #endif /* MYMATH_HPP */

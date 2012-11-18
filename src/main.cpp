@@ -1,6 +1,67 @@
 #include "Transform.hpp"
 #include "film.hpp"
 
+float frand ()
+{
+    return rand() / (float)RAND_MAX;
+}
+
+int min_elem (const vec3& a)
+{
+    return ((a.x < a.y)
+            ? ((a.x < a.z)
+               ? 0
+               : (a.z < a.y) ? 2 : 1)
+            : ((a.y < a.z)
+               ? 1
+               : (a.x < a.z) ? 0 : 2));
+}
+
+void orthonormal_basis (const vec3& r, vec3* s, vec3* t)
+{
+    int i = min_elem(r);
+    int i2 = (i+1) % 3;
+    int i3 = (i+2) % 3;
+    if (i3 < i2) std::swap(i2,i3);
+
+    (*s)[i] = 0;
+    (*s)[i2] = -r[i3];
+    (*s)[i3] = r[i2];
+    (*s) = normalize(*s);
+
+    (*t) = cross(r, *s);
+}
+
+/// Builds transform that changes vector from world space to tangent space.
+Transform build_tangent_from_world (const vec3& normal)
+{
+    vec3 t, b;
+    orthonormal_basis(normal, &t, &b);
+
+    glm::mat4 m(glm::vec4(t, 1.0f),
+                glm::vec4(b, 1.0f),
+                glm::vec4(normal, 1.0f),
+                glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    return Transform(glm::transpose(m), m);
+}
+
+/**
+ * u_S = (c1,c2,c3) = vector in V
+ * S = {v1,v2,v3} = basis of vector space V
+ * u = c1*v1 + c2*v2 + c3*v3 = S^T * u_S
+ */
+
+
+vec3 sample_hemisphere (const vec2& uv)
+{
+    float z = uv[0];
+    float r = sqrtf(1.0f - z*z);
+    float phi = uv[1] * M_2PI;
+
+    return vec3(cos(phi)*r, sin(phi)*r, z);
+}
+
 
 struct Ray
 {
@@ -67,10 +128,48 @@ bool Sphere::intersect (Ray& ray, Isect* isect)
     return true;
 }
 
+class Texture
+{
+public:
+    Spectrum sample (const vec3& pos) const;
+
+    Spectrum R;
+};
+
+class BSDF
+{
+public:
+    virtual ~BSDF () {}
+
+    /// @param wo [in]  exiting vector in tangent space, normalized
+    /// @param wi [out] entering vector in tangent space, normalized
+    /// @return reflectance f(wo,wi)
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const = 0;
+};
+
+class Lambertian : public BSDF
+{
+public:
+    Lambertian (const Spectrum& rho) : rho(rho) {}
+    Spectrum rho;
+
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    {
+        *wi = sample_hemisphere(uv);
+        return rho / (float)M_PI; // i still don't get why it's pi and not 2pi...
+    }
+};
+
+
 class Material
 {
 public:
     Spectrum R;
+
+    BSDF* get_bsdf (const vec3& p) const
+    {
+        return new Lambertian(R);
+    }
 };
 
 class Primitive
@@ -162,8 +261,14 @@ int main (int argc, char* argv[])
             Spectrum L(0.0f);
 
             if (list.intersect(ray, &isect)) {
-                float f = clamp(dot(isect.n, normalize(vec3(-1,1,1))), 0.0f, 1.0f);
-                L = isect.mat->R * f;
+                BSDF* bsdf = isect.mat->get_bsdf(isect.p);
+                Transform tangent_from_world = build_tangent_from_world(isect.n);
+                vec3 wo_t = tangent_from_world.vector(-ray.d);
+                vec3 wi_t;
+                Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
+                delete bsdf;
+                vec3 wo = inverse(tangent_from_world).vector(wi_t);
+                L = f * (float)fmax(dot(wo, vec3(0,1,0)), 0.f);
             }
 
             film.add_sample(xf,yf, L);
