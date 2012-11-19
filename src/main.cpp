@@ -248,30 +248,34 @@ int main (int argc, char* argv[])
     list.add(&prim1);
     list.add(&prim2);
 
+    int spp = 10;
+
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
-            float xf = xp / (float)film.xres;
-            float yf = yp / (float)film.yres;
+            for (int s = 0; s < spp; s++) {
+                float xf = (xp+frand()) / (float)film.xres;
+                float yf = (yp+frand()) / (float)film.yres;
 
-            vec3 orig(0,0,3);
-            vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
+                vec3 orig(0,0,3);
+                vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
 
-            Ray ray(orig, dir);
-            Isect isect;
-            Spectrum L(0.0f);
+                Ray ray(orig, dir);
+                Isect isect;
+                Spectrum L(0.0f);
 
-            if (list.intersect(ray, &isect)) {
-                BSDF* bsdf = isect.mat->get_bsdf(isect.p);
-                Transform tangent_from_world = build_tangent_from_world(isect.n);
-                vec3 wo_t = tangent_from_world.vector(-ray.d);
-                vec3 wi_t;
-                Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
-                delete bsdf;
-                vec3 wo = inverse(tangent_from_world).vector(wi_t);
-                L = f * (float)fmax(dot(wo, vec3(0,1,0)), 0.f);
+                if (list.intersect(ray, &isect)) {
+                    BSDF* bsdf = isect.mat->get_bsdf(isect.p);
+                    Transform tangent_from_world = build_tangent_from_world(isect.n);
+                    vec3 wo_t = tangent_from_world.vector(-ray.d);
+                    vec3 wi_t;
+                    Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
+                    delete bsdf;
+                    vec3 wo = inverse(tangent_from_world).vector(wi_t);
+                    L = f * (float)fmax(dot(wo, normalize(vec3(-1,1,0))), 0.f) * 10.0f;
+                }
+
+                film.add_sample(xf,yf, L);
             }
-
-            film.add_sample(xf,yf, L);
         }
     }
 
