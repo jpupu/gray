@@ -1,0 +1,4 @@
+((def t1 (transform (translate 1 0 0) (rotate 90)))
+(def sp1 (shape (sphere)))
+(def mat1 (material (diffuse 1 0 0)))
+(prim (transform t1 (translate 0 1 0)) sp1 mat1))
