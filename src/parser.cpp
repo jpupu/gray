@@ -183,7 +183,7 @@ int main ()
 			 std::istreambuf_iterator<char>());
 
 	Scanner scanner(s);
-	const List* l = get_list(scanner);
+	auto l = get_list(scanner);
 	print_list(l);
 
   	return 0;
