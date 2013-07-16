@@ -107,19 +107,22 @@ class ListItem;
 typedef std::vector<ListItem> List;
 struct ListItem
 {
-	ListItem () : list(new List()), name(nullptr) { }
-	ListItem (const List* l) : list(l), name(nullptr) { }
-	ListItem (const std::string& name) : list(nullptr), name(new std::string(name)) { }
-	ListItem (double number) : list(nullptr), name(nullptr), number(number) { }
+	enum Type { LIST, NAME, NUMBER };
 
+	ListItem () : type(LIST), list(new List()), name(nullptr) { }
+	ListItem (const List* l) : type(LIST), list(l), name(nullptr) { }
+	ListItem (const std::string& name) : type(NAME), list(nullptr), name(new std::string(name)) { }
+	ListItem (double number) : type(NUMBER), list(nullptr), name(nullptr), number(number) { }
+
+	Type type;
 	const List* list;
 	const std::string* name;
 	double number;
 
-	bool is_list () const { return list != nullptr; }
-	bool is_name () const { return name != nullptr; }
-	bool is_number () const { return !is_list() && !is_name(); }
-	bool is_atom () const { return !is_list(); }
+	bool is_list () const { return type == LIST; }
+	bool is_name () const { return type == NAME; }
+	bool is_number () const { return type == NUMBER; }
+	bool is_atom () const { return type != LIST; }
 	bool is_atomic () const
 	{
 		return (is_atom() || 
