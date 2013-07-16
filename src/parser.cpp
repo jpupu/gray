@@ -109,14 +109,14 @@ struct ListItem
 {
 	enum Type { LIST, NAME, NUMBER };
 
-	ListItem () : type(LIST), list(new List()), name(nullptr) { }
-	ListItem (const List* l) : type(LIST), list(l), name(nullptr) { }
-	ListItem (const std::string& name) : type(NAME), list(nullptr), name(new std::string(name)) { }
-	ListItem (double number) : type(NUMBER), list(nullptr), name(nullptr), number(number) { }
+	ListItem () : type(LIST), list(new List()) { }
+	ListItem (const List* l) : type(LIST), list(l) { }
+	ListItem (const std::string& name) : type(NAME), name(name) { }
+	ListItem (double number) : type(NUMBER), number(number) { }
 
 	Type type;
-	const List* list;
-	const std::string* name;
+	std::unique_ptr<const List> list;
+	std::string name;
 	double number;
 
 	bool is_list () const { return type == LIST; }
@@ -138,9 +138,9 @@ void print_list (const List* l, bool newline=true)
 {
 	std::cout << "(";
 	for (const ListItem& i : *l) {
-		if (i.is_name()) std::cout << *i.name << " ";
+		if (i.is_name()) std::cout << i.name << " ";
 		else if (i.is_number()) std::cout << i.number << " ";
-		else print_list(i.list, false);
+		else print_list(i.list.get(), false);
 	}
 	std::cout << ") ";
 	if (newline) std::cout << std::endl;
