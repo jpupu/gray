@@ -103,19 +103,22 @@ public:
 };
 
 
+
+
 class ListItem;
 typedef std::vector<ListItem> List;
+
 struct ListItem
 {
 	enum Type { LIST, NAME, NUMBER };
 
-	ListItem () : type(LIST), list(new List()) { }
-	ListItem (const List* l) : type(LIST), list(l) { }
+	ListItem () : type(LIST) { }
+	ListItem (const List& l) : type(LIST), list(l) { }
 	ListItem (const std::string& name) : type(NAME), name(name) { }
 	ListItem (double number) : type(NUMBER), number(number) { }
 
 	Type type;
-	std::unique_ptr<const List> list;
+	List list;
 	std::string name;
 	double number;
 
@@ -126,52 +129,100 @@ struct ListItem
 	bool is_atomic () const
 	{
 		return (is_atom() || 
-				std::all_of(list->begin(), list->end(),
+				std::all_of(list.begin(), list.end(),
 						    [](const ListItem& i){ return i.is_atom(); }));
 	}
 };
 
 
 
+void print_list (const List& l, bool newline=true);
 
-void print_list (const List* l, bool newline=true)
+void print_list_item (const ListItem& i)
+{
+	if (i.is_name()) std::cout << i.name << " ";
+	else if (i.is_number()) std::cout << i.number << " ";
+	else print_list(i.list, false);
+}
+
+void print_list (const List& l, bool newline)
 {
 	std::cout << "(";
-	for (const ListItem& i : *l) {
-		if (i.is_name()) std::cout << i.name << " ";
-		else if (i.is_number()) std::cout << i.number << " ";
-		else print_list(i.list.get(), false);
-	}
+	for (const ListItem& i : l) print_list_item(i);
 	std::cout << ") ";
 	if (newline) std::cout << std::endl;
 }
 
-const List* get_list (Scanner& scanner)
+List get_list (Scanner& scanner)
 {
 	if (scanner.next().type != "lparen") {
 		scanner.back();
 		throw;
 	}
 
-	List* res = new List();
+	List res;
 	Scanner::Token tok;
 	while ((tok = scanner.next()).type != "rparen") {
 		if (tok.type == "eot") throw;
 		else if (tok.type == "number") {
-			res->push_back(ListItem(tok.v_number));
+			res.push_back(ListItem(tok.v_number));
 		}
 		else if (tok.type == "name") {
-			res->push_back(ListItem(tok.v_name));
+			res.push_back(ListItem(tok.v_name));
 		}
 		else if (tok.type == "lparen") {
 			scanner.back();
-			res->push_back(ListItem(get_list(scanner)));
+			res.push_back(ListItem(get_list(scanner)));
 		}
 		else throw;
 	}
 
 	return res;
 }
+
+
+class Evaluator
+{
+public:
+	ListItem evaluate (const ListItem& item)
+	{
+		if (item.is_number()) {
+			return item;
+		}
+		if (item.is_name()) {
+			// TODO: var lookup
+			return ListItem(item.name);
+		}
+
+		// evaluate sublists
+		List temp;
+		for (auto& x : item.list) {
+			temp.push_back(evaluate(x));
+		}
+
+		// evaluate function
+		auto& head = temp.front();
+		if (head.is_name()) {
+			if (head.name == "sum") {
+				double s = 0;
+				for (size_t i = 1; i < temp.size(); ++i) {
+					s += temp[i].number;
+				}
+				return ListItem(s);
+			}
+			if (head.name == "prod") {
+				double s = 1;
+				for (size_t i = 1; i < temp.size(); ++i) {
+					s *= temp[i].number;
+				}
+				return ListItem(s);
+			}
+		}
+
+		return ListItem(temp);
+	}
+};
+
 
 
 
@@ -185,6 +236,11 @@ int main ()
 	Scanner scanner(s);
 	auto l = get_list(scanner);
 	print_list(l);
+
+	Evaluator e;
+	auto l2 = e.evaluate(ListItem(l));
+	print_list_item(l2);
+
 
   	return 0;
 }
