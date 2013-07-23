@@ -8,6 +8,7 @@ extern "C" {
 #include <fstream>
 #include <cstdlib>
 #include <algorithm>
+#include <stdexcept>
 
 using std::string;
 
@@ -24,7 +25,7 @@ public:
 			const char* err;
 			re.reset(trex_compile(pattern.c_str(), &err), [](TRex* ptr){trex_free(ptr);});
 			if (re == nullptr) {
-				throw;
+				throw std::logic_error("malformed regex");
 			}
 		}
 
@@ -96,7 +97,7 @@ public:
 
 	const Token& back ()
 	{
-		if (backed) throw;
+		if (backed) throw std::logic_error("backing backed");
 		backed = true;
 		return current;
 	}
@@ -121,6 +122,12 @@ struct ListItem
 	List list;
 	std::string name;
 	double number;
+
+	double get_number () const
+	{
+		if (is_number()) return number;
+		throw std::logic_error("ListItem not a number");
+	}
 
 	bool is_list () const { return type == LIST; }
 	bool is_name () const { return type == NAME; }
@@ -157,13 +164,13 @@ List get_list (Scanner& scanner)
 {
 	if (scanner.next().type != "lparen") {
 		scanner.back();
-		throw;
+		throw std::logic_error("get_list expects lparen, got " + scanner.next().type);
 	}
 
 	List res;
 	Scanner::Token tok;
 	while ((tok = scanner.next()).type != "rparen") {
-		if (tok.type == "eot") throw;
+		if (tok.type == "eot") throw std::logic_error("unexpected end of file");
 		else if (tok.type == "number") {
 			res.push_back(ListItem(tok.v_number));
 		}
@@ -174,7 +181,7 @@ List get_list (Scanner& scanner)
 			scanner.back();
 			res.push_back(ListItem(get_list(scanner)));
 		}
-		else throw;
+		else throw std::logic_error("bad toke type "+tok.type);
 	}
 
 	return res;
@@ -184,42 +191,80 @@ List get_list (Scanner& scanner)
 class Evaluator
 {
 public:
-	ListItem evaluate (const ListItem& item)
+	ListItem evaluate (const ListItem& form)
 	{
-		if (item.is_number()) {
-			return item;
-		}
-		if (item.is_name()) {
-			// TODO: var lookup
-			return ListItem(item.name);
+		// Number literal.
+		// Evaluates to itself.
+		if (form.is_number()) {
+			return form;
 		}
 
-		// evaluate sublists
-		List temp;
-		for (auto& x : item.list) {
-			temp.push_back(evaluate(x));
+		// Symbol.
+		if (form.is_name()) {
+			if (got_number(form.name)) {
+				return ListItem(lookup_number(form));	
+			}
+			throw std::invalid_argument("Symbol "+form.name+" not defined.");
 		}
 
-		// evaluate function
+		// Empty list.
+		// Evaluates to itself.
+		if (form.list.size() == 0) {
+			return form;
+		}
+
+		// Non-empty list.
+		// Considered a call.
+
+		// // Evaluate sublists.
+		// List temp;
+		// for (auto& x : form.list) {
+		// 	temp.push_back(evaluate(x));
+		// }
+
+		// Evaluate list form.
+		auto& temp = form.list;
 		auto& head = temp.front();
 		if (head.is_name()) {
 			if (head.name == "sum") {
 				double s = 0;
 				for (size_t i = 1; i < temp.size(); ++i) {
-					s += temp[i].number;
+					s += evaluate(temp[i]).get_number();
 				}
 				return ListItem(s);
 			}
 			if (head.name == "prod") {
 				double s = 1;
 				for (size_t i = 1; i < temp.size(); ++i) {
-					s *= temp[i].number;
+					s *= evaluate(temp[i]).get_number();
 				}
 				return ListItem(s);
 			}
+			throw std::invalid_argument("Cannot evaluate function "+head.name);
+		}
+		else {
+			throw std::invalid_argument("Form head is not a symbol.");
 		}
 
 		return ListItem(temp);
+	}
+
+
+	double lookup_number (const ListItem& i)
+	{
+		if (i.is_number()) return i.number;
+		if (i.is_name()) {
+			if (i.name == "pi") return 3.14;
+			// TODO lookup
+			return 1.0;
+		}
+		throw std::invalid_argument("Can't cast list to number!");
+	}
+
+	bool got_number (const ListItem& i)
+	{
+		if (i.name == "pi") return true;
+		return false;
 	}
 };
 
@@ -228,19 +273,24 @@ public:
 
 int main ()
 {
-	std::ifstream ifs ("sample1.scene");
-	std::string s;
-	s.assign(std::istreambuf_iterator<char>(ifs),
-			 std::istreambuf_iterator<char>());
+	try {
+		std::ifstream ifs ("sample1.scene");
+		std::string s;
+		s.assign(std::istreambuf_iterator<char>(ifs),
+				 std::istreambuf_iterator<char>());
 
-	Scanner scanner(s);
-	auto l = get_list(scanner);
-	print_list(l);
+		Scanner scanner(s);
+		auto l = get_list(scanner);
+		print_list(l);
 
-	Evaluator e;
-	auto l2 = e.evaluate(ListItem(l));
-	print_list_item(l2);
-
+		Evaluator e;
+		auto l2 = e.evaluate(ListItem(l));
+		print_list_item(l2);
+	}
+	catch (std::exception& e) {
+		std::cerr << "Exception caught: " << e.what() << std::endl;
+		return 1;
+	}
 
   	return 0;
 }
