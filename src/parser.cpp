@@ -216,14 +216,6 @@ public:
 
 		// Non-empty list.
 		// Considered a call.
-
-		// // Evaluate sublists.
-		// List temp;
-		// for (auto& x : form.list) {
-		// 	temp.push_back(evaluate(x));
-		// }
-
-		// Evaluate list form.
 		auto& temp = form.list;
 		auto& head = temp.front();
 		if (head.is_name()) {
@@ -231,21 +223,6 @@ public:
 			if (f != functions.end()) {
 				return ListItem(f->second(temp));
 			}
-			// if (head.name == "sum") {
-			// 	return ListItem(functions["sum"](temp));
-			// 	// double s = 0;
-			// 	// for (size_t i = 1; i < temp.size(); ++i) {
-			// 	// 	s += evaluate(temp[i]).get_number();
-			// 	// }
-			// 	// return ListItem(s);
-			// }
-			// if (head.name == "prod") {
-			// 	double s = 1;
-			// 	for (size_t i = 1; i < temp.size(); ++i) {
-			// 		s *= evaluate(temp[i]).get_number();
-			// 	}
-			// 	return ListItem(s);
-			// }
 			throw std::invalid_argument("Cannot evaluate function "+head.name);
 		}
 		else {
@@ -275,12 +252,31 @@ public:
 
 	std::map<std::string, std::function<ListItem(const List&)>> functions =
 	{
-		{ "sum", [this](const List& in)->ListItem{
-				double s = 0;
-				for (size_t i = 1; i < in.size(); ++i) {
-					s += this->evaluate(in[i]).get_number();
+		{ "sum", [this](const List& form)->ListItem{
+			double s = 0;
+			for (size_t i = 1; i < form.size(); ++i) {
+				s += this->evaluate(form[i]).get_number();
+			}
+			return ListItem(s);
+		}},
+		{ "vec", [this](const List& form)->ListItem{
+			return ListItem(form);
+		}},
+		{ "add", [this](const List& form)->ListItem{
+			double a[3] = {0,0,0};
+			for (size_t i = 1; i < form.size(); ++i) {
+				if (form[i].is_list() && 
+					form[i].list[0].is_name() &&
+					form[i].list[0].name == "vec")
+				{
+					for (int k = 0; k < 3; k++) {
+						a[k] += this->evaluate(form[i].list[k+1]).get_number();
+					}
 				}
-				return ListItem(s);
+			}
+			List r = {  ListItem("vec"), ListItem(a[0]),
+						ListItem(a[1]), ListItem(a[2]) };
+			return ListItem(r);
 		}}
 	};
 };
