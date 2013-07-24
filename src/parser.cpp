@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 extern "C" {
 #include "trex/trex.h"
 }
@@ -226,20 +227,25 @@ public:
 		auto& temp = form.list;
 		auto& head = temp.front();
 		if (head.is_name()) {
-			if (head.name == "sum") {
-				double s = 0;
-				for (size_t i = 1; i < temp.size(); ++i) {
-					s += evaluate(temp[i]).get_number();
-				}
-				return ListItem(s);
+			auto f = functions.find(head.name);
+			if (f != functions.end()) {
+				return ListItem(f->second(temp));
 			}
-			if (head.name == "prod") {
-				double s = 1;
-				for (size_t i = 1; i < temp.size(); ++i) {
-					s *= evaluate(temp[i]).get_number();
-				}
-				return ListItem(s);
-			}
+			// if (head.name == "sum") {
+			// 	return ListItem(functions["sum"](temp));
+			// 	// double s = 0;
+			// 	// for (size_t i = 1; i < temp.size(); ++i) {
+			// 	// 	s += evaluate(temp[i]).get_number();
+			// 	// }
+			// 	// return ListItem(s);
+			// }
+			// if (head.name == "prod") {
+			// 	double s = 1;
+			// 	for (size_t i = 1; i < temp.size(); ++i) {
+			// 		s *= evaluate(temp[i]).get_number();
+			// 	}
+			// 	return ListItem(s);
+			// }
 			throw std::invalid_argument("Cannot evaluate function "+head.name);
 		}
 		else {
@@ -266,6 +272,17 @@ public:
 		if (i.name == "pi") return true;
 		return false;
 	}
+
+	std::map<std::string, std::function<ListItem(const List&)>> functions =
+	{
+		{ "sum", [this](const List& in)->ListItem{
+				double s = 0;
+				for (size_t i = 1; i < in.size(); ++i) {
+					s += this->evaluate(in[i]).get_number();
+				}
+				return ListItem(s);
+		}}
+	};
 };
 
 
