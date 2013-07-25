@@ -147,7 +147,30 @@ struct ListItem
 	}
 };
 
-
+template<typename T1>
+List makelist (const T1& t1)
+{
+	List l = {ListItem(t1)};
+	return l;
+}
+template<typename T1, typename T2>
+List makelist (const T1& t1, const T2& t2)
+{
+	List l = {ListItem(t1),ListItem(t2)};
+	return l;
+}
+template<typename T1, typename T2, typename T3>
+List makelist (const T1& t1, const T2& t2, const T3& t3)
+{
+	List l = {ListItem(t1),ListItem(t2),ListItem(t3)};
+	return l;
+}
+template<typename T1, typename T2, typename T3, typename T4>
+List makelist (const T1& t1, const T2& t2, const T3& t3, const T4& t4)
+{
+	List l = {ListItem(t1),ListItem(t2),ListItem(t3),ListItem(t4)};
+	return l;
+}
 
 void print_list (const List& l, bool newline=true);
 
@@ -281,22 +304,15 @@ public:
 		{ "add", [this](const List& form)->ListItem{
 			double a[3] = {0,0,0};
 			for (size_t i = 1; i < form.size(); ++i) {
-				// if (form[i].is_list() && 
-				// 	form[i].list[0].is_name() &&
-				// 	form[i].list[0].name == "vec3")
-				if (form[i].is_function("vec3")) 
-				{
-					for (int k = 0; k < 3; k++) {
-						a[k] += form[i].list[k+1].get_number();
-					}
-				}
-				else {
-					throw std::runtime_error("add operands must be vec3's");
+				if (!form[i].is_function("vec3")) throw std::runtime_error("add operands must be vec3's");
+
+				for (int k = 0; k < 3; k++) {
+					a[k] += form[i].list[k+1].get_number();
 				}
 			}
-			List r = {  ListItem("vec3"), ListItem(a[0]),
-						ListItem(a[1]), ListItem(a[2]) };
-			return ListItem(r);
+			// List r = {  ListItem("vec3"), ListItem(a[0]),
+			// 			ListItem(a[1]), ListItem(a[2]) };
+			return ListItem(makelist("vec3", a[0], a[1], a[2]));
 		}}
 	};
 };
