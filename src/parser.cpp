@@ -140,6 +140,11 @@ struct ListItem
 				std::all_of(list.begin(), list.end(),
 						    [](const ListItem& i){ return i.is_atom(); }));
 	}
+
+	bool is_function (const string& name) const
+	{
+		return is_list() && list[0].is_name() && list[0].name == name;
+	}
 };
 
 
@@ -259,22 +264,37 @@ public:
 			}
 			return ListItem(s);
 		}},
-		{ "vec", [this](const List& form)->ListItem{
-			return ListItem(form);
+		{ "vec3", [this](const List& form)->ListItem{
+			if (form.size() != 4) {
+				throw std::runtime_error("vec3 must have 3 elements");
+			}
+			List r = { ListItem("vec3") };
+			for (int i = 1; i < 4; i++) {
+				ListItem it = this->evaluate(form[i]);
+				if (!it.is_number()) {
+					throw std::runtime_error("vec3 elements must evaluate to numbers");
+				}
+				r.push_back(it);
+			}
+			return ListItem(r);
 		}},
 		{ "add", [this](const List& form)->ListItem{
 			double a[3] = {0,0,0};
 			for (size_t i = 1; i < form.size(); ++i) {
-				if (form[i].is_list() && 
-					form[i].list[0].is_name() &&
-					form[i].list[0].name == "vec")
+				// if (form[i].is_list() && 
+				// 	form[i].list[0].is_name() &&
+				// 	form[i].list[0].name == "vec3")
+				if (form[i].is_function("vec3")) 
 				{
 					for (int k = 0; k < 3; k++) {
-						a[k] += this->evaluate(form[i].list[k+1]).get_number();
+						a[k] += form[i].list[k+1].get_number();
 					}
 				}
+				else {
+					throw std::runtime_error("add operands must be vec3's");
+				}
 			}
-			List r = {  ListItem("vec"), ListItem(a[0]),
+			List r = {  ListItem("vec3"), ListItem(a[0]),
 						ListItem(a[1]), ListItem(a[2]) };
 			return ListItem(r);
 		}}
