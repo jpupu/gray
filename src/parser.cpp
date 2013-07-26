@@ -67,7 +67,8 @@ public:
 			Rule("lparen", "\\("),
 			Rule("rparen", "\\)"),
 			Rule("number", "-?(\\d*\\.)?\\d+"),
-			Rule("name", "\\w+")
+			Rule("name", "\\w+"),
+			Rule("illegal", "[^ \\n\\t\\r]+")
 		};
 	}
 
@@ -193,13 +194,13 @@ List get_list (Scanner& scanner)
 {
 	if (scanner.next().type != "lparen") {
 		scanner.back();
-		throw std::logic_error("get_list expects lparen, got " + scanner.next().type);
+		throw std::runtime_error("get_list expects lparen, got " + scanner.next().type);
 	}
 
 	List res;
 	Scanner::Token tok;
 	while ((tok = scanner.next()).type != "rparen") {
-		if (tok.type == "eot") throw std::logic_error("unexpected end of file");
+		if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
 		else if (tok.type == "number") {
 			res.push_back(ListItem(tok.v_number));
 		}
@@ -210,7 +211,10 @@ List get_list (Scanner& scanner)
 			scanner.back();
 			res.push_back(ListItem(get_list(scanner)));
 		}
-		else throw std::logic_error("bad toke type "+tok.type);
+		else if (tok.type == "illegal") {
+			throw std::runtime_error("illegal token "+tok.v_name);
+		}
+		else throw std::runtime_error("bad token type "+tok.type);
 	}
 
 	return res;
