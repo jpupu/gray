@@ -67,7 +67,7 @@ public:
 			Rule("lparen", "\\("),
 			Rule("rparen", "\\)"),
 			Rule("number", "-?(\\d*\\.)?\\d+"),
-			Rule("name", "\\w+"),
+			Rule("name", "[\\w+-/=?.]+"),
 			Rule("illegal", "[^ \\n\\t\\r]+")
 		};
 	}
@@ -306,7 +306,7 @@ public:
 			this->bindings[form[1].name] = form[2];
 			return form[2];
 		}},
-		{ "sum", [this](const List& form)->ListItem{
+		{ "+", [this](const List& form)->ListItem{
 			double s = 0;
 			for (size_t i = 1; i < form.size(); ++i) {
 				s += this->evaluate(form[i]).get_number();
@@ -327,7 +327,7 @@ public:
 			}
 			return ListItem(r);
 		}},
-		{ "add", [this](const List& form)->ListItem{
+		{ "v+", [this](const List& form)->ListItem{
 			double a[3] = {0,0,0};
 			for (size_t i = 1; i < form.size(); ++i) {
 				if (!form[i].is_function("vec3")) throw std::runtime_error("add operands must be vec3's");
