@@ -108,17 +108,17 @@ public:
 
 
 
-class ListItem;
-typedef std::vector<ListItem> List;
+class Datum;
+typedef std::vector<Datum> List;
 
-struct ListItem
+struct Datum
 {
 	enum Type { LIST, NAME, NUMBER };
 
-	ListItem () : type(LIST) { }
-	ListItem (const List& l) : type(LIST), list(l) { }
-	ListItem (const std::string& name) : type(NAME), name(name) { }
-	ListItem (double number) : type(NUMBER), number(number) { }
+	Datum () : type(LIST) { }
+	Datum (const List& l) : type(LIST), list(l) { }
+	Datum (const std::string& name) : type(NAME), name(name) { }
+	Datum (double number) : type(NUMBER), number(number) { }
 
 	Type type;
 	List list;
@@ -128,7 +128,7 @@ struct ListItem
 	double get_number () const
 	{
 		if (is_number()) return number;
-		throw std::logic_error("ListItem not a number");
+		throw std::logic_error("Datum not a number");
 	}
 
 	bool is_list () const { return type == LIST; }
@@ -139,7 +139,7 @@ struct ListItem
 	{
 		return (is_atom() || 
 				std::all_of(list.begin(), list.end(),
-						    [](const ListItem& i){ return i.is_atom(); }));
+						    [](const Datum& i){ return i.is_atom(); }));
 	}
 
 	bool is_function (const string& name) const
@@ -151,31 +151,31 @@ struct ListItem
 template<typename T1>
 List makelist (const T1& t1)
 {
-	List l = {ListItem(t1)};
+	List l = {Datum(t1)};
 	return l;
 }
 template<typename T1, typename T2>
 List makelist (const T1& t1, const T2& t2)
 {
-	List l = {ListItem(t1),ListItem(t2)};
+	List l = {Datum(t1),Datum(t2)};
 	return l;
 }
 template<typename T1, typename T2, typename T3>
 List makelist (const T1& t1, const T2& t2, const T3& t3)
 {
-	List l = {ListItem(t1),ListItem(t2),ListItem(t3)};
+	List l = {Datum(t1),Datum(t2),Datum(t3)};
 	return l;
 }
 template<typename T1, typename T2, typename T3, typename T4>
 List makelist (const T1& t1, const T2& t2, const T3& t3, const T4& t4)
 {
-	List l = {ListItem(t1),ListItem(t2),ListItem(t3),ListItem(t4)};
+	List l = {Datum(t1),Datum(t2),Datum(t3),Datum(t4)};
 	return l;
 }
 
 void print_list (const List& l, bool newline=true);
 
-void print_list_item (const ListItem& i)
+void print_list_item (const Datum& i)
 {
 	if (i.is_name()) std::cout << i.name << " ";
 	else if (i.is_number()) std::cout << i.number << " ";
@@ -185,7 +185,7 @@ void print_list_item (const ListItem& i)
 void print_list (const List& l, bool newline)
 {
 	std::cout << "(";
-	for (const ListItem& i : l) print_list_item(i);
+	for (const Datum& i : l) print_list_item(i);
 	std::cout << ") ";
 	if (newline) std::cout << std::endl;
 }
@@ -202,14 +202,14 @@ List get_list (Scanner& scanner)
 	while ((tok = scanner.next()).type != "rparen") {
 		if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
 		else if (tok.type == "number") {
-			res.push_back(ListItem(tok.v_number));
+			res.push_back(Datum(tok.v_number));
 		}
 		else if (tok.type == "name") {
-			res.push_back(ListItem(tok.v_name));
+			res.push_back(Datum(tok.v_name));
 		}
 		else if (tok.type == "lparen") {
 			scanner.back();
-			res.push_back(ListItem(get_list(scanner)));
+			res.push_back(Datum(get_list(scanner)));
 		}
 		else if (tok.type == "illegal") {
 			throw std::runtime_error("illegal token "+tok.v_name);
@@ -224,7 +224,7 @@ List get_list (Scanner& scanner)
 class Evaluator
 {
 public:
-	ListItem evaluate (const ListItem& form)
+	Datum evaluate (const Datum& form)
 	{
 		// Number literal.
 		// Evaluates to itself.
@@ -235,7 +235,7 @@ public:
 		// Symbol.
 		if (form.is_name()) {
 			if (got_number(form.name)) {
-				return ListItem(lookup_number(form));	
+				return Datum(lookup_number(form));	
 			}
 			throw std::invalid_argument("Symbol "+form.name+" not defined.");
 		}
@@ -253,7 +253,7 @@ public:
 		if (head.is_name()) {
 			auto f = functions.find(head.name);
 			if (f != functions.end()) {
-				return ListItem(f->second(temp));
+				return Datum(f->second(temp));
 			}
 			throw std::invalid_argument("Cannot evaluate function "+head.name);
 		}
@@ -261,11 +261,11 @@ public:
 			throw std::invalid_argument("Form head is not a symbol.");
 		}
 
-		return ListItem(temp);
+		return Datum(temp);
 	}
 
 
-	double lookup_number (const ListItem& i)
+	double lookup_number (const Datum& i)
 	{
 		if (i.is_number()) return i.number;
 		if (i.is_name()) {
@@ -281,7 +281,7 @@ public:
 		throw std::invalid_argument("Can't cast list to number!");
 	}
 
-	bool got_number (const ListItem& i)
+	bool got_number (const Datum& i)
 	{
 		if (i.is_number()) return true;
 		if (i.is_name()) {
@@ -292,42 +292,42 @@ public:
 		return false;
 	}
 
-	std::map<std::string, ListItem> bindings =
+	std::map<std::string, Datum> bindings =
 	{
-		{ "pi", ListItem(3.14159265358979323846) }
+		{ "pi", Datum(3.14159265358979323846) }
 	};
 
-	std::map<std::string, std::function<ListItem(const List&)>> functions =
+	std::map<std::string, std::function<Datum(const List&)>> functions =
 	{
-		{ "bind", [this](const List& form)->ListItem{
+		{ "bind", [this](const List& form)->Datum{
 			if (form.size() != 3 ||	!form[1].is_name()) {
 				throw std::runtime_error("bind needs a name and a value");
 			}
 			this->bindings[form[1].name] = form[2];
 			return form[2];
 		}},
-		{ "+", [this](const List& form)->ListItem{
+		{ "+", [this](const List& form)->Datum{
 			double s = 0;
 			for (size_t i = 1; i < form.size(); ++i) {
 				s += this->evaluate(form[i]).get_number();
 			}
-			return ListItem(s);
+			return Datum(s);
 		}},
-		{ "vec3", [this](const List& form)->ListItem{
+		{ "vec3", [this](const List& form)->Datum{
 			if (form.size() != 4) {
 				throw std::runtime_error("vec3 must have 3 elements");
 			}
-			List r = { ListItem("vec3") };
+			List r = { Datum("vec3") };
 			for (int i = 1; i < 4; i++) {
-				ListItem it = this->evaluate(form[i]);
+				Datum it = this->evaluate(form[i]);
 				if (!it.is_number()) {
 					throw std::runtime_error("vec3 elements must evaluate to numbers");
 				}
 				r.push_back(it);
 			}
-			return ListItem(r);
+			return Datum(r);
 		}},
-		{ "v+", [this](const List& form)->ListItem{
+		{ "v+", [this](const List& form)->Datum{
 			double a[3] = {0,0,0};
 			for (size_t i = 1; i < form.size(); ++i) {
 				if (!form[i].is_function("vec3")) throw std::runtime_error("add operands must be vec3's");
@@ -336,9 +336,9 @@ public:
 					a[k] += this->evaluate(form[i].list[k+1]).get_number();
 				}
 			}
-			// List r = {  ListItem("vec3"), ListItem(a[0]),
-			// 			ListItem(a[1]), ListItem(a[2]) };
-			return ListItem(makelist("vec3", a[0], a[1], a[2]));
+			// List r = {  Datum("vec3"), Datum(a[0]),
+			// 			Datum(a[1]), Datum(a[2]) };
+			return Datum(makelist("vec3", a[0], a[1], a[2]));
 		}}
 	};
 };
