@@ -265,21 +265,43 @@ public:
 	{
 		if (i.is_number()) return i.number;
 		if (i.is_name()) {
-			if (i.name == "pi") return 3.14;
-			// TODO lookup
-			return 1.0;
+			const auto& it = bindings.find(i.name);
+			if (it == bindings.end()) {
+				throw std::runtime_error("No binding for "+i.name);
+			}
+			if (!it->second.is_number()) {
+				throw std::runtime_error(i.name + " is not a number");
+			}
+			return it->second.number;
 		}
 		throw std::invalid_argument("Can't cast list to number!");
 	}
 
 	bool got_number (const ListItem& i)
 	{
-		if (i.name == "pi") return true;
+		if (i.is_number()) return true;
+		if (i.is_name()) {
+			const auto& it = bindings.find(i.name);
+			return it != bindings.end() && it->second.is_number();
+		}
+		// list
 		return false;
 	}
 
+	std::map<std::string, ListItem> bindings =
+	{
+		{ "pi", ListItem(3.14159265358979323846) }
+	};
+
 	std::map<std::string, std::function<ListItem(const List&)>> functions =
 	{
+		{ "bind", [this](const List& form)->ListItem{
+			if (form.size() != 3 ||	!form[1].is_name()) {
+				throw std::runtime_error("bind needs a name and a value");
+			}
+			this->bindings[form[1].name] = form[2];
+			return form[2];
+		}},
 		{ "sum", [this](const List& form)->ListItem{
 			double s = 0;
 			for (size_t i = 1; i < form.size(); ++i) {
@@ -307,7 +329,7 @@ public:
 				if (!form[i].is_function("vec3")) throw std::runtime_error("add operands must be vec3's");
 
 				for (int k = 0; k < 3; k++) {
-					a[k] += form[i].list[k+1].get_number();
+					a[k] += this->evaluate(form[i].list[k+1]).get_number();
 				}
 			}
 			// List r = {  ListItem("vec3"), ListItem(a[0]),
@@ -330,11 +352,19 @@ int main ()
 
 		Scanner scanner(s);
 		auto l = get_list(scanner);
+		std::cout << "INPUT: ";
 		print_list(l);
 
 		Evaluator e;
-		auto l2 = e.evaluate(ListItem(l));
-		print_list_item(l2);
+		for (const auto& f : l) { 
+			std::cout << "FORM: ";
+			print_list_item(f);
+			std::cout << std::endl;
+			auto l2 = e.evaluate(f);
+			std::cout << "VALUE: ";
+			print_list_item(l2);
+			std::cout << std::endl;
+		}
 	}
 	catch (std::exception& e) {
 		std::cerr << "Exception caught: " << e.what() << std::endl;

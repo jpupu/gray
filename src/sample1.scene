@@ -1,4 +1,5 @@
-(add (vec3 2 3 4) (vec3 1 0 0))
+((bind x 100)
+(add (vec3 (sum 2 x) 3 4) (vec3 1 0 pi)))
 (sum 1 2 3 (sum 100 200 pi))
 (
 (1 2 3 4)
