@@ -67,7 +67,7 @@ public:
 			Rule("lparen", "\\("),
 			Rule("rparen", "\\)"),
 			Rule("number", "-?(\\d*\\.)?\\d+"),
-			Rule("name", "[\\w+-/=?.]+"),
+			Rule("name", "[\\w+*-/=?.]+"),
 			Rule("illegal", "[^ \\n\\t\\r]+")
 		};
 	}
@@ -253,7 +253,7 @@ public:
 		if (head.is_name()) {
 			auto f = functions.find(head.name);
 			if (f != functions.end()) {
-				return Datum(f->second(temp));
+				return Datum(f->second(this, temp));
 			}
 			throw std::invalid_argument("Cannot evaluate function "+head.name);
 		}
@@ -297,29 +297,30 @@ public:
 		{ "pi", Datum(3.14159265358979323846) }
 	};
 
-	std::map<std::string, std::function<Datum(const List&)>> functions =
+	typedef std::function<Datum(Evaluator* ev, const List& form)> function_t;
+
+	void register_function(const std::string& name, function_t f)
 	{
-		{ "bind", [this](const List& form)->Datum{
+		functions[name] = f;
+	}
+
+	std::map<std::string, function_t> functions =
+	{
+		{ "bind", [](Evaluator* ev, const List& form)->Datum{
 			if (form.size() != 3 ||	!form[1].is_name()) {
 				throw std::runtime_error("bind needs a name and a value");
 			}
-			this->bindings[form[1].name] = form[2];
+			ev->bindings[form[1].name] = form[2];
 			return form[2];
 		}},
-		{ "+", [this](const List& form)->Datum{
-			double s = 0;
-			for (size_t i = 1; i < form.size(); ++i) {
-				s += this->evaluate(form[i]).get_number();
-			}
-			return Datum(s);
-		}},
-		{ "vec3", [this](const List& form)->Datum{
+
+		{ "vec3", [](Evaluator* ev, const List& form)->Datum{
 			if (form.size() != 4) {
 				throw std::runtime_error("vec3 must have 3 elements");
 			}
 			List r = { Datum("vec3") };
 			for (int i = 1; i < 4; i++) {
-				Datum it = this->evaluate(form[i]);
+				Datum it = ev->evaluate(form[i]);
 				if (!it.is_number()) {
 					throw std::runtime_error("vec3 elements must evaluate to numbers");
 				}
@@ -327,13 +328,13 @@ public:
 			}
 			return Datum(r);
 		}},
-		{ "v+", [this](const List& form)->Datum{
+		{ "v+", [](Evaluator* ev, const List& form)->Datum{
 			double a[3] = {0,0,0};
 			for (size_t i = 1; i < form.size(); ++i) {
 				if (!form[i].is_function("vec3")) throw std::runtime_error("add operands must be vec3's");
 
 				for (int k = 0; k < 3; k++) {
-					a[k] += this->evaluate(form[i].list[k+1]).get_number();
+					a[k] += ev->evaluate(form[i].list[k+1]).get_number();
 				}
 			}
 			// List r = {  Datum("vec3"), Datum(a[0]),
@@ -344,6 +345,44 @@ public:
 };
 
 
+struct core_functions
+{
+	static Datum plus(Evaluator* ev, const List& form)
+	{
+		double s = 0;
+		for (size_t i = 1; i < form.size(); ++i) {
+			s += ev->evaluate(form[i]).get_number();
+		}
+		return Datum(s);
+	}
+
+	static Datum minus(Evaluator* ev, const List& form)
+	{
+		double s = ev->evaluate(form[1]).get_number();
+		for (size_t i = 2; i < form.size(); ++i) {
+			s -= ev->evaluate(form[i]).get_number();
+		}
+		return Datum(s);
+	}
+
+	static Datum mul(Evaluator* ev, const List& form)
+	{
+		double s = 1;
+		for (size_t i = 1; i < form.size(); ++i) {
+			s *= ev->evaluate(form[i]).get_number();
+		}
+		return Datum(s);
+	}
+
+	static Datum div(Evaluator* ev, const List& form)
+	{
+		double s = ev->evaluate(form[1]).get_number();
+		for (size_t i = 2; i < form.size(); ++i) {
+			s /= ev->evaluate(form[i]).get_number();
+		}
+		return Datum(s);
+	}
+};
 
 
 int main ()
@@ -360,6 +399,12 @@ int main ()
 		print_list(l);
 
 		Evaluator e;
+
+		e.register_function("+", core_functions::plus);
+		e.register_function("-", core_functions::minus);
+		e.register_function("*", core_functions::mul);
+		e.register_function("/", core_functions::div);
+
 		for (const auto& f : l) { 
 			std::cout << "FORM: ";
 			print_list_item(f);
