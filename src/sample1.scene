@@ -1,3 +1,4 @@
+((bind pallo (sphere)) (prim pallo) (prim pallo))
 ((bind x 100)
 (v+ (vec3 (+ 2 x) (- 110 (* 2 5)) 4) (vec3 1 0 pi)))
 (sum 1 2 3 (sum 100 200 pi))

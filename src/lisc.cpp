@@ -165,6 +165,9 @@ List get_list (Scanner& scanner)
 
 Datum Evaluator::evaluate (const Datum& form)
 {
+	std::cout << "==[ EVAL ";
+	print_list_item(form); std::cout << " -> ";
+
 	// Number literal.
 	// Evaluates to itself.
 	if (form.is_number()) {
@@ -173,15 +176,23 @@ Datum Evaluator::evaluate (const Datum& form)
 
 	// Symbol.
 	if (form.is_name()) {
-		if (got_number(form.name)) {
-			return Datum(lookup_number(form));	
+		const auto& it = bindings.find(form.name);
+		if (it == bindings.end()) {
+			throw std::runtime_error("No binding for "+form.name);
 		}
-		throw std::invalid_argument("Symbol "+form.name+" not defined.");
+		print_list_item(it->second); std::cout << std::endl;
+		return it->second;
+
+		// if (got_number(form.name)) {
+		// 	return Datum(lookup_number(form));	
+		// }
+		// throw std::invalid_argument("Symbol "+form.name+" not defined.");
 	}
 
 	// Empty list.
 	// Evaluates to itself.
 	if (form.list.size() == 0) {
+		print_list_item(form); std::cout << std::endl;
 		return form;
 	}
 
@@ -192,7 +203,9 @@ Datum Evaluator::evaluate (const Datum& form)
 	if (head.is_name()) {
 		auto f = functions.find(head.name);
 		if (f != functions.end()) {
-			return Datum(f->second(this, temp));
+			auto result = f->second(this, temp);
+			print_list_item(result); std::cout << std::endl;
+			return Datum(result);
 		}
 		throw std::invalid_argument("Cannot evaluate function "+head.name);
 	}
@@ -200,6 +213,7 @@ Datum Evaluator::evaluate (const Datum& form)
 		throw std::invalid_argument("Form head is not a symbol.");
 	}
 
+	print_list_item(Datum(temp)); std::cout << std::endl;
 	return Datum(temp);
 }
 
@@ -284,8 +298,8 @@ Evaluator::Evaluator ()
 		if (form.size() != 3 ||	!form[1].is_name()) {
 			throw std::runtime_error("bind needs a name and a value");
 		}
-		ev->bindings[form[1].name] = form[2];
-		return form[2];
+		ev->bindings[form[1].name] = ev->evaluate(form[2]);
+		return ev->bindings[form[1].name];
 	};
 
 	functions["vec3"] = [](Evaluator* ev, const List& form)->Datum{
@@ -341,7 +355,7 @@ Datum Evaluator::evaluate_file (const std::string& filename)
 
 	List res;
 	for (const auto& f : l) { 
-		std::cout << "FORM: ";
+		std::cout << std::endl << "FORM: ";
 		print_list_item(f);
 		std::cout << std::endl;
 		auto l2 = evaluate(f);
@@ -354,10 +368,12 @@ Datum Evaluator::evaluate_file (const std::string& filename)
 	return Datum(res);
 }
 
+void register_lisc_gray (Evaluator* ev);
 int main ()
 {
 	try {
 		Evaluator ev;
+		register_lisc_gray(&ev);
 		ev.evaluate_file("sample1.scene");
 	}
 	catch (std::exception& e) {

@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <stdexcept>
+#include <algorithm>
 
 struct Datum;
 typedef std::vector<Datum> List;
@@ -26,7 +27,7 @@ struct Datum
 	double get_number () const
 	{
 		if (is_number()) return number;
-		throw std::logic_error("Datum not a number");
+		throw std::logic_error("Datum "+to_string()+" not a number");
 	}
 
 	bool is_list () const { return type == LIST; }
@@ -44,6 +45,53 @@ struct Datum
 	{
 		return is_list() && list[0].is_name() && list[0].name == name;
 	}
+
+	std::string to_string () const
+	{
+		switch (type) {
+			case LIST: return "<list>";
+			case NAME: return "<name \""+name+"\">";
+			case NUMBER: return "<number ?>";//+std::to_string(number)+">";
+		}
+		char foop[32];
+		sprintf(foop, "<invalid %#x>", type);
+		return foop;
+		// return "<invalid>";
+	}
+
+	// void match (const std::string& pattern) const
+	// {
+	// 	if (!is_list()) return false;
+	// 	if (list.size() != pattern.size()) return false;
+	// 	for (size_t i = 0; i < pattern.size(); i++) {
+	// 		char c = pattern[i];
+	// 		const Datum& d = list[i];
+	// 		bool ok;
+	// 		switch (c) {
+	// 			case 'l': ok = d.is_list(); break;
+	// 			case 's': ok = d.is_name(); break;
+	// 			case 'n': ok = d.is_number(); break;
+	// 		}
+	// 		if (!ok) return false;
+	// 	}
+	// 	return true;
+	// }
+
+	// std::string stringrep () const
+	// {
+	// 	if (is_list()) {
+	// 		std::string rep = "";
+	// 		for (const Datum& d : list) {
+	// 			switch (d.type) {
+	// 				case LIST: rep += 'l'; break;
+	// 				case NAME: rep += 's'; break;
+	// 				case NUMBER: rep += 'n'; break;
+	// 			}
+	// 		}
+	// 		return rep;
+	// 	}
+	// 	else return "";
+	// }
 };
 
 
