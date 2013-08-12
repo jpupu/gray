@@ -142,5 +142,21 @@ public:
 	std::map<std::string, function_t> functions;
 };
 
+struct ModuleBase
+{
+	ModuleBase (Evaluator* ev=nullptr)
+		: ev(ev)
+	{ }
+
+	Evaluator* ev;
+	
+	Datum eval (const Datum& d)
+	{
+		return ev->evaluate(d);
+	}
+};
+
+#define REGISTER_METHOD(name) ev->register_function(#name, [this](Evaluator*, const List& form)->Datum{return this->name(form);});
+
 
 #endif // _LISC_HPP_
