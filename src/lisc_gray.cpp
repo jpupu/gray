@@ -16,8 +16,9 @@ struct module : public ModuleBase
 
 	Datum prim (const List& form)
 	{
-		int shape = eval(form.at(1)).list.at(1);
-		return makelist("prim_", (double)shape);
+		List shape = eval(form.at(1));
+		int shapenum = shape.at(1);
+		return makelist("prim_", (double)shapenum);
 	}
 
 	Datum sphere (const List& form)
