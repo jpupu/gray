@@ -30,6 +30,22 @@ struct Datum
 		throw std::logic_error("Datum "+to_string()+" not a number");
 	}
 
+	std::string get_name () const
+	{
+		if (is_name()) return name;
+		throw std::logic_error("Datum "+to_string()+" not a symbol");
+	}
+
+	List get_list () const
+	{
+		if (is_list()) return list;
+		throw std::logic_error("Datum "+to_string()+" not a list");
+	}
+
+	operator double() const { return get_number(); }
+	operator std::string() const { return get_name(); }
+	operator List() const { return get_list(); }
+
 	bool is_list () const { return type == LIST; }
 	bool is_name () const { return type == NAME; }
 	bool is_number () const { return type == NUMBER; }

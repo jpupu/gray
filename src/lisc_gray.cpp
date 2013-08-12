@@ -16,7 +16,7 @@ struct module : public ModuleBase
 
 	Datum prim (const List& form)
 	{
-		int shape = eval(form.at(1)).list.at(1).get_number();
+		int shape = eval(form.at(1)).list.at(1);
 		return makelist("prim_", (double)shape);
 	}
 
