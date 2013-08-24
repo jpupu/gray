@@ -344,6 +344,10 @@ Evaluator::Evaluator ()
 Datum Evaluator::evaluate_file (const std::string& filename)
 {
 	std::ifstream ifs(filename);
+	if (!ifs.is_open()) {
+		std::cerr << "Error opening file '" << filename << "'!\n";
+		return Datum(0);
+	}
 	std::string s;
 	s.assign(std::istreambuf_iterator<char>(ifs),
 			 std::istreambuf_iterator<char>());
@@ -368,19 +372,19 @@ Datum Evaluator::evaluate_file (const std::string& filename)
 	return Datum(res);
 }
 
-void register_lisc_gray (Evaluator* ev);
-int main ()
-{
-	try {
-		Evaluator ev;
-		register_lisc_gray(&ev);
-		ev.evaluate_file("sample1.scene");
-	}
-	catch (std::exception& e) {
-		std::cerr << "Exception caught: " << e.what() << std::endl;
-		return 1;
-	}
+// void register_lisc_gray (Evaluator* ev);
+// int main ()
+// {
+// 	try {
+// 		Evaluator ev;
+// 		register_lisc_gray(&ev);
+// 		ev.evaluate_file("sample1.scene");
+// 	}
+// 	catch (std::exception& e) {
+// 		std::cerr << "Exception caught: " << e.what() << std::endl;
+// 		return 1;
+// 	}
 
-  	return 0;
-}
+//   	return 0;
+// }
 

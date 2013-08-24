@@ -1,5 +1,6 @@
 
 #include "film.hpp"
+#include <iostream>
 
 float frand ()
 {
@@ -63,41 +64,6 @@ vec3 sample_hemisphere (const vec2& uv)
 }
 
 
-class Sphere : public Shape
-{
-public:
-    bool intersect (Ray& r, Isect* isect);
-};
-
-bool Sphere::intersect (Ray& ray, Isect* isect)
-{
-    const vec3& o = ray.o;
-    const vec3& d = ray.d;
-
-    float A = dot(d, d);
-    float B = 2 * dot(d, o);
-    float C = dot(o,o) - 1;
-
-    float discrim = B*B - 4*A*C;
-    if (discrim < 0) {
-        return false;
-    }
-
-    // TODO: t0 and t1 can be written differently to improve precision.
-    // see http://wiki.cgsociety.org/index.php/Ray_Sphere_Intersection
-    float t0 = (-B - sqrtf(discrim)) / (2*A);
-    float t1 = (-B + sqrtf(discrim)) / (2*A);
-    if (t0 > t1) std::swap(t0, t1);
-
-    float t = (t0 >= ray.tmin) ? t0 : t1;
-    if (t < ray.tmin || t > ray.tmax) return false;
-
-    ray.tmax = t;
-    isect->p = o + t*d;
-    isect->n = normalize(isect->p);
-
-    return true;
-}
 
 class Texture
 {
@@ -127,8 +93,22 @@ BSDF* Material::get_bsdf (const vec3& p) const
 }
 
 
+#include "lisc_gray.hpp"
 
+ListAggregate* load (const char* filename)
+{
+    Evaluator ev;
+    LiscGray lg(&ev);
+    ev.evaluate_file(filename);
 
+    ListAggregate* list = new ListAggregate();
+    for (auto p : lg.primitives) {
+        list->add(p);
+        GeometricPrimitive* pp = (GeometricPrimitive*)p;
+    }
+
+    return list;
+}
 
 
 
@@ -136,22 +116,31 @@ int main (int argc, char* argv[])
 {
     Film film(256,256);
 
-    Material mat1 = { Spectrum(1.0f, 0.0f, .5f) };
-    Material mat2 = { Spectrum(.8f, 1.0f, .5f) };
-    Shape* sp1 = new Sphere();
-    GeometricPrimitive prim1;
-    prim1.mat = &mat1;
-    prim1.shape = sp1;
-    prim1.world_from_prim = Transform::rotate(90, vec3(0,1,0));
-    GeometricPrimitive prim2;
-    prim2.mat = &mat2;
-    prim2.shape = sp1;
-    prim2.world_from_prim = Transform::translate(vec3(1.4,1,-1));
-    ListAggregate list;
-    list.add(&prim1);
-    list.add(&prim2);
+    // Material mat1 = { Spectrum(1.0f, 0.0f, .5f) };
+    // Material mat2 = { Spectrum(.8f, 1.0f, .5f) };
+    // Shape* sp1 = new Sphere();
+    // GeometricPrimitive prim1;
+    // prim1.mat = &mat1;
+    // prim1.shape = sp1;
+    // prim1.world_from_prim = Transform::rotate(90, vec3(0,1,0));
+    // GeometricPrimitive prim2;
+    // prim2.mat = &mat2;
+    // prim2.shape = sp1;
+    // prim2.world_from_prim = Transform::translate(vec3(1.4,1,-1));
+    // ListAggregate list;
+    // list.add(&prim1);
+    // list.add(&prim2);
 
-    int spp = 10;
+    ListAggregate* list = nullptr;
+    try {
+        list = load("test1.scene");
+    }
+    catch (std::exception& e) {
+        std::cerr << "Exception caught: " << e.what() << std::endl;
+        return 1;
+    }
+
+    int spp = 2;
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
@@ -166,7 +155,7 @@ int main (int argc, char* argv[])
                 Isect isect;
                 Spectrum L(0.0f);
 
-                if (list.intersect(ray, &isect)) {
+                if (list->intersect(ray, &isect)) {
                     BSDF* bsdf = isect.mat->get_bsdf(isect.p);
                     Transform tangent_from_world = build_tangent_from_world(isect.n);
                     vec3 wo_t = tangent_from_world.vector(-ray.d);
