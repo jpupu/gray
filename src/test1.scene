@@ -1,1 +1,4 @@
-((prim (sphere)))
+(
+(prim (sphere) (translate 1 0 0))
+(prim (sphere) (translate -1 .5 0))
+)

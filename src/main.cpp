@@ -98,7 +98,8 @@ BSDF* Material::get_bsdf (const vec3& p) const
 ListAggregate* load (const char* filename)
 {
     Evaluator ev;
-    LiscGray lg(&ev);
+    LiscLinAlg* la = new LiscLinAlg(&ev);
+    LiscGray lg(&ev, la);
     ev.evaluate_file(filename);
 
     ListAggregate* list = new ListAggregate();

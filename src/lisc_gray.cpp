@@ -3,8 +3,8 @@
 #include <iostream>
 
 
-LiscGray::LiscGray (Evaluator* ev)
-	: ModuleBase(ev)
+LiscGray::LiscGray (Evaluator* ev, LiscLinAlg* linalg)
+	: ModuleBase(ev), linalg(linalg)
 {
 	counter=0;
 	REGISTER_METHOD(prim);
@@ -17,11 +17,16 @@ Datum LiscGray::prim (const List& form)
 	int shapenum = shape.at(1);
 	Shape* s = shapes[shapenum];
 
+	List xforml = eval(form.at(2));
+	int xformnum = xforml.at(1);
+	Transform& xform = linalg->xforms[xformnum];
+
 	Material* m = new Material { Spectrum(1.0f, 0.0f, .5f) };
 
 	auto* p = new GeometricPrimitive();
 	p->mat = m;
 	p->shape = s;
+	p->world_from_prim = xform;
 
 	primitives.push_back(p);
 

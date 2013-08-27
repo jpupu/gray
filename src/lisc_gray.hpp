@@ -2,12 +2,13 @@
 #define LISC_GRAY_H__
 
 #include "lisc.hpp"
+#include "lisc_linalg.hpp"
 #include "gray.hpp"
 
 class LiscGray : public ModuleBase
 {
 public:
-	LiscGray (Evaluator* ev=nullptr);
+	LiscGray (Evaluator* ev, LiscLinAlg* linalg);
 
 	double counter;
 
@@ -17,6 +18,7 @@ public:
 
 	std::vector<Primitive*> primitives;
 	std::vector<Shape*> shapes;
+	LiscLinAlg* linalg;
 };
 
  
