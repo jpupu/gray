@@ -59,14 +59,14 @@ public:
 class Material
 {
 public:
-    Spectrum R;
-
-    BSDF* get_bsdf (const vec3& p) const;
+    virtual ~Material () {}
+    virtual BSDF* get_bsdf (const vec3& p) const = 0;
 };
 
 class Primitive
 {
 public:
+    virtual ~Primitive () {}
     virtual bool intersect (Ray& r, Isect* isect) const = 0;
 };
 

@@ -21,10 +21,10 @@ Datum LiscGray::prim (const List& form)
 	int xformnum = xforml.at(1);
 	Transform& xform = linalg->xforms[xformnum];
 
-	Material* m = new Material { Spectrum(1.0f, 0.0f, .5f) };
+	// Material* m = new Material { Spectrum(1.0f, 0.0f, .5f) };
 
 	auto* p = new GeometricPrimitive();
-	p->mat = m;
+	// p->mat = m;
 	p->shape = s;
 	p->world_from_prim = xform;
 
