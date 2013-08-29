@@ -1,0 +1,126 @@
+{ let: 'pos', { type: 'vec3', x: 2.0, y: 4.5, z: 5.6 } }
+
+
+
+
+
+
+
+T0 := identity
+T1 := translate T0 0 -10 0
+T2 := rotate_x T1 90
+T3 := scale T2 13.0
+SPHERE0 := sphere T2
+T4 := translate T2 0 -5 0
+T5 := scale T4 7.0
+SPHERE1 := sphere T5
+
+
+load_identity
+translate 0 -10 0
+rotate_x 90
+push
+scale 13.0
+sphere
+pop
+translate 0 -5 0
+push
+scale 7.0
+sphere
+pop
+
+load_identity
+translate 0 -10 0
+rotate_x 90
+{
+  scale 13.0
+  sphere
+}
+translate 0 -5 0
+{
+  scale 7.0
+  sphere
+}
+
+
+scene {
+	load_identity {}
+	translate { 0 -10 0 }
+	rotate_x { 90 }
+	sphere { scale { 13.0 } }
+	translate { 0 -5 0 }
+	sphere { scale { 7.0 } } 
+}
+
+
+scene {
+	{
+		rotx(90)
+		sphere { xlat(0 -1 0) M1? }
+		sphere { xlat(0 -2 0) M2? }
+	}
+	{
+		rotx(130)
+		sphere { xlat(0 1 0) M3? }
+		sphere { xlat(0 2 0) M4? }
+	}
+}
+
+
+scene := [ T:id cont:[block1 block2] ]
+block1 := [ T1:T*rot90 cont:[sphere1_1 sphere1_2] ]
+block2 := [ T2:T*rot130 cont:[sphere2_1 sphere2_2] ]
+sphere1_1 := [ T1_1:T1*xlat(0 -1 0) M1_1:M1? ]
+
+1. [] < scene{...}
+2. [T:id] < block1{...}, block2{...}
+3. [T:id, T1:T*rot90] < sphere1_1{...}, sphere1_2{...}, block2{...}
+4. [T:id, T1:T*rot90 T1_1:T1*xlat(0 -1 0) M1_1:M1? obj1_1:sphere(T1_1,M1_1)] < sphere1_2{...}, block2{...}
+
+
+scene {
+	T := rot(90)
+	sphere { xlat(0 -1 0) M1? }
+	sphere { rot*xlat(0 -1 0) M1? }
+}
+
+
+
+
+
+shape sp1 = sphere()
+material mat1 = diffuse(1,0,0)
+prim prim1 = geomprim(sp1, mat1)
+
+
+prim { sphere() diffuse(1,1,1) }
+
+set sp1 = shape sphere
+set mat1 = material diffuse <1,0,0>
+prim sp1 mat1
+
+transform t1 := {translate <1,0,0> rotate 90}
+shape sp1 := {sphere}
+material mat1 := {diffuse <1,0,0>}
+prim {t1 translate <0,1,0>} sp1 mat2
+prim {t1} {sphere} mat2
+prim {translate <0,0,1>} {sphere} {diffuse <1,0,0>}
+
+transform t1 := (translate <1,0,0> rotate 90)
+shape sp1 := (sphere)
+material mat1 := (diffuse <1,0,0>)
+prim (t1 translate <0,1,0>) sp1 mat2
+prim (t1) (sphere) mat2
+prim (translate <0,0,1>) (sphere) (diffuse <1,0,0>)
+
+transform t1 = (translate 1 0 0 rotate 90)
+shape sp1 = (sphere)
+material mat1 = (diffuse 1 0 0)
+prim (t1 translate 0 1 0) sp1 mat2
+prim (t1) (sphere) mat2
+prim (translate 0 0 1) (sphere) (diffuse 1 0 0)
+
+(def t1 (transform (translate 1 0 0) (rotate 90)))
+(def sp1 (shape (sphere)))
+(def mat1 (material (diffuse 1 0 0)))
+(prim (transform t1 (translate 0 1 0)) sp1 mat1)

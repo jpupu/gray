@@ -1,0 +1,5 @@
+(
+(prim (sphere) (translate 1 0 0))
+(prim (sphere) (t* (translate -1 0 0) (scale .7)))
+(prim (sphere) (t* (translate 1 0 0) (rotate 45  0 0 1) (translate -2 0 0) (scale .3)))
+)

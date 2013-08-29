@@ -1,0 +1,13 @@
+((bind pallo (sphere)) (prim pallo) (prim pallo))
+((bind x 100)
+(v+ (vec3 (+ 2 x) (- 110 (* 2 5)) 4) (vec3 1 0 pi)))
+(sum 1 2 3 (sum 100 200 pi))
+(
+(1 2 3 4)
+(sum 1 2 3 4 (sum 5 6 7))
+(sum 1 2 3 4 (prod 10 20 huh ) puh pi)
+)
+((def t1 (mul (translate 1 0 0) (rotate 90)))
+(def sp1 (sphere))
+(def mat1 (diffuse 1 0 0))
+(prim (mul t1 (translate 0 1 0)) sp1 mat1))
