@@ -79,7 +79,7 @@ void Film::tone_mapping ()
 
     const float Lwhite = 1.2 * powf(2, log2(Lmax) - log2(Lmin) - 5);
 
-    float Lwhite2 = Lwhite*Lwhite;
+    // float Lwhite2 = Lwhite*Lwhite;
     for (int i = 0; i < xres*yres; i++) {
         float L = alpha / Lav * data[i].luminosity();
 //         float Ld = L * (1 + L/Lwhite2) / (1 + L);
