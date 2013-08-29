@@ -136,6 +136,7 @@ List makelist (const T1& t1, const T2& t2, const T3& t3, const T4& t4)
 	return l;
 }
 
+
 class Evaluator
 {
 public:
@@ -156,6 +157,7 @@ public:
 	void register_function(const std::string& name, function_t f);
 
 	std::map<std::string, function_t> functions;
+
 };
 
 struct ModuleBase
@@ -173,6 +175,7 @@ struct ModuleBase
 };
 
 #define REGISTER_METHOD(name) ev->register_function(#name, [this](Evaluator*, const List& form)->Datum{return this->name(form);});
+#define REGISTER_METHOD_NAME(name, method) ev->register_function(name, [this](Evaluator*, const List& form)->Datum{return this->method(form);});
 
 
 #endif // _LISC_HPP_

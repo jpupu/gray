@@ -15,7 +15,7 @@ Datum LiscGray::prim (const List& form)
 {
 	List shape = eval(form.at(1));
 	int shapenum = shape.at(1);
-	Shape* s = shapes[shapenum];
+	Shape* s = shapes.at(shapenum);
 
 	List xforml = eval(form.at(2));
 	int xformnum = xforml.at(1);

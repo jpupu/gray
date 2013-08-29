@@ -12,6 +12,8 @@ public:
 	Datum vec3 (const List& form);
 	Datum identity (const List& form);
 	Datum translate (const List& form);
+	Datum scale (const List& form);
+	Datum rotate (const List& form);
 	Datum tmul (const List& form);
 
 	std::vector<Transform> xforms;
