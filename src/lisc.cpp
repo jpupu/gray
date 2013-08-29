@@ -253,6 +253,11 @@ void Evaluator::register_function(const std::string& name, function_t f)
 
 struct core_functions
 {
+	static Datum comment(Evaluator* ev, const List& form)
+	{
+		return form;
+	}
+
 	static Datum plus(Evaluator* ev, const List& form)
 	{
 		double s = 0;
@@ -331,6 +336,7 @@ Evaluator::Evaluator ()
 		return Datum(makelist("vec3", a[0], a[1], a[2]));
 	};
 
+	register_function("--", core_functions::comment);
 	register_function("+", core_functions::plus);
 	register_function("-", core_functions::minus);
 	register_function("*", core_functions::mul);
