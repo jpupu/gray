@@ -41,7 +41,7 @@ inline vec3 Transform::point (const vec3& v) const
 }
 inline vec3 Transform::normal (const vec3& v) const
 {
-    return vec3(glm::transpose(m_inv) * glm::vec4(v, 1));
+    return vec3(glm::transpose(m_inv) * glm::vec4(v, 0));
 }
 
 

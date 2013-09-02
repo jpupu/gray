@@ -111,7 +111,7 @@ public:
 
         r.tmax = ro.tmax;
         isect->p = world_from_prim.point(isect->p);
-        isect->n = world_from_prim.normal(isect->n);
+        isect->n = normalize(world_from_prim.normal(isect->n));
         isect->mat = mat;
         return true;
     }
