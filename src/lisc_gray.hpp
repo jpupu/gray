@@ -16,8 +16,12 @@ public:
 
 	Datum sphere (const List& form);
 
+	Datum diffuse (const List& form);
+	Datum mirror (const List& form);
+
 	std::vector<Primitive*> primitives;
 	std::vector<Shape*> shapes;
+	std::vector<Material*> materials;
 	LiscLinAlg* linalg;
 };
 

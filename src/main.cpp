@@ -2,6 +2,7 @@
 #include "film.hpp"
 #include <iostream>
 #include "materials.hpp"
+#include "util.hpp"
 
 
 
@@ -28,8 +29,8 @@ ListAggregate* load (const char* filename)
 
     ListAggregate* list = new ListAggregate();
     for (auto p : lg.primitives) {
-        GeometricPrimitive* pp = (GeometricPrimitive*)p;
-        pp->mat = new Mirror(vec3(1,1,1));
+        // GeometricPrimitive* pp = (GeometricPrimitive*)p;
+        // pp->mat = new Mirror(vec3(1,1,1));
         list->add(p);
     }
 
@@ -89,7 +90,7 @@ int main (int argc, char* argv[])
                     Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
                     delete bsdf;
                     vec3 wo = inverse(tangent_from_world).vector(wi_t);
-                    L = f * (float)fmax(dot(wo, normalize(vec3(0,0,1))), 0.f) * 1.0f;
+                    L = f * (float)fmax(dot(wo, normalize(vec3(0,0,1))), 0.f) * 10.0f;
                 }
                 else L = Spectrum(0,1,0);
 

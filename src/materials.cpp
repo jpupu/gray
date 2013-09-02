@@ -66,9 +66,9 @@ public:
 
 Material* make_diffuse (const Spectrum& reflectance)
 {
-	return Diffuse(reflectance);
+	return new Diffuse(reflectance);
 }
 Material* make_mirror (const Spectrum& reflectance)
 {
-	return Mirror(reflectance);
+	return new Mirror(reflectance);
 }
