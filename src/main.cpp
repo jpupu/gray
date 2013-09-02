@@ -78,6 +78,7 @@ class Lambertian : public BSDF
 {
 public:
     Lambertian (const Spectrum& rho) : rho(rho) {}
+    /// reflectance
     Spectrum rho;
 
     virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
@@ -87,20 +88,16 @@ public:
     }
 };
 
-class BlinnPhong : public BSDF
+class Specular : public BSDF
 {
 public:
-    BlinnPhong (const Spectrum& rho, float power) : rho(rho), power(power) {}
+    Specular (const Spectrum& rho) : rho(rho) {}
     Spectrum rho;
-    float power;
 
     virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
     {
-        *wi = sample_hemisphere(uv);
-        vec3 H = normalize(wo + *wi);
-        // H.z == dot(H, (0,0,1)) == dot(H, N)
-        float val = pow(H.z, power); 
-        return rho * val;
+        *wi = vec3(-wo.x, -wo.y, wo.z);
+        return rho;
     }
 };
 
@@ -122,19 +119,18 @@ public:
 
 };
 
-class Plastic : public Material
+class Mirror : public Material
 {
 public:
-    Plastic (const Spectrum& R, float n)
-        : R(R), n(n)
+    Mirror (const Spectrum& R)
+        : R(R)
     { }
 
     Spectrum R;
-    float n;
 
     virtual BSDF* get_bsdf (const vec3& p) const
     {
-        return new BlinnPhong(R, n);
+        return new Specular(R);
     }
 
 };
@@ -152,7 +148,7 @@ ListAggregate* load (const char* filename)
     ListAggregate* list = new ListAggregate();
     for (auto p : lg.primitives) {
         GeometricPrimitive* pp = (GeometricPrimitive*)p;
-        pp->mat = new Plastic(vec3(1,1,1), 20);
+        pp->mat = new Mirror(vec3(1,1,1));
         list->add(p);
     }
 
@@ -189,7 +185,7 @@ int main (int argc, char* argv[])
         return 1;
     }
 
-    int spp = 40;
+    int spp = 10;
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
@@ -212,7 +208,7 @@ int main (int argc, char* argv[])
                     Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
                     delete bsdf;
                     vec3 wo = inverse(tangent_from_world).vector(wi_t);
-                    L = f * (float)fmax(dot(wo, normalize(vec3(0,0,1))), 0.f) * 10.0f;
+                    L = f * (float)fmax(dot(wo, normalize(vec3(0,0,1))), 0.f) * 1.0f;
                 }
                 else L = Spectrum(0,1,0);
 
