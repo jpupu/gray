@@ -8,21 +8,14 @@
 class LiscGray : public ModuleBase
 {
 public:
-	LiscGray (Evaluator* ev, LiscLinAlg* linalg);
-
-	double counter;
-
-	Datum prim (const List& form);
-
-	Datum sphere (const List& form);
-
-	Datum diffuse (const List& form);
-	Datum mirror (const List& form);
+	static LiscGray* create (Evaluator* ev, LiscLinAlg* linalg);
 
 	std::vector<Primitive*> primitives;
 	std::vector<Shape*> shapes;
 	std::vector<Material*> materials;
-	LiscLinAlg* linalg;
+
+protected:
+	LiscGray (Evaluator* ev);
 };
 
  

@@ -24,16 +24,19 @@ ListAggregate* load (const char* filename)
 {
     Evaluator ev;
     LiscLinAlg* la = new LiscLinAlg(&ev);
-    LiscGray lg(&ev, la);
+    LiscGray* lg = LiscGray::create(&ev, la);
     ev.evaluate_file(filename);
 
     ListAggregate* list = new ListAggregate();
-    for (auto p : lg.primitives) {
+    for (auto p : lg->primitives) {
         // GeometricPrimitive* pp = (GeometricPrimitive*)p;
         // pp->mat = new Mirror(vec3(1,1,1));
         list->add(p);
     }
 
+    delete lg;
+    delete la;
+    
     return list;
 }
 
