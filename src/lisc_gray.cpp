@@ -21,6 +21,7 @@ public:
 		REGISTER_METHOD(sphere);
 		REGISTER_METHOD(diffuse);
 		REGISTER_METHOD(mirror);
+		REGISTER_METHOD(plane);
 	}
 
 	Datum prim (const List& form)
@@ -51,7 +52,14 @@ public:
 	{
 		auto* s = make_sphere();
 		shapes.push_back(s);
-		return makelist("sphere_", shapes.size()-1);
+		return makelist("shape_", shapes.size()-1);
+	}
+
+	Datum plane (const List& form)
+	{
+		auto* s = make_plane();
+		shapes.push_back(s);
+		return makelist("shape_", shapes.size()-1);
 	}
 
 	Datum diffuse (const List& form)

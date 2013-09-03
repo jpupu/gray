@@ -4,6 +4,7 @@
 #include "gray.hpp"
 
 Shape* make_sphere ();
+Shape* make_plane ();
 
  
 #endif /* end of include guard: SHAPES_H__ */

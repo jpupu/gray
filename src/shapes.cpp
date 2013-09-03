@@ -42,3 +42,26 @@ bool Sphere::intersect (Ray& ray, Isect* isect)
 }
 
 
+class Plane : public Shape
+{
+public:
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        if (ray.d.y == 0) return false;
+
+        float t = -ray.o.y / ray.d.y;
+        
+        if (t < ray.tmin || t > ray.tmax) return false;
+
+        ray.tmax = t;
+        isect->p = ray.o + t*ray.d;
+        isect->n = vec3(0,0,1);
+
+        return true;
+    }
+};
+
+Shape* make_plane ()
+{
+    return new Plane();
+}
