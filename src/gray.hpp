@@ -117,5 +117,16 @@ public:
     }
 };
 
+class Scene
+{
+public:
+    Primitive* primitives;
+
+    bool intersect (Ray& ray, Isect* isect) const
+    {
+        return primitives->intersect(ray, isect);
+    }
+};
+
 
 #endif /* GRAY_HPP */

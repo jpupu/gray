@@ -16,28 +16,26 @@ public:
 };
 
 
-
-
 #include "lisc_gray.hpp"
 
-ListAggregate* load (const char* filename)
+Scene* load (const char* filename)
 {
+    Scene* scn = new Scene();
     Evaluator ev;
     LiscLinAlg* la = new LiscLinAlg(&ev);
     LiscGray* lg = LiscGray::create(&ev, la);
     ev.evaluate_file(filename);
 
-    ListAggregate* list = new ListAggregate();
+    auto* list = new ListAggregate();
     for (auto p : lg->primitives) {
-        // GeometricPrimitive* pp = (GeometricPrimitive*)p;
-        // pp->mat = new Mirror(vec3(1,1,1));
         list->add(p);
     }
+    scn->primitives = list;
 
     delete lg;
     delete la;
     
-    return list;
+    return scn;
 }
 
 
@@ -46,24 +44,9 @@ int main (int argc, char* argv[])
 {
     Film film(512,512);
 
-    // Material mat1 = { Spectrum(1.0f, 0.0f, .5f) };
-    // Material mat2 = { Spectrum(.8f, 1.0f, .5f) };
-    // Shape* sp1 = new Sphere();
-    // GeometricPrimitive prim1;
-    // prim1.mat = &mat1;
-    // prim1.shape = sp1;
-    // prim1.world_from_prim = Transform::rotate(90, vec3(0,1,0));
-    // GeometricPrimitive prim2;
-    // prim2.mat = &mat2;
-    // prim2.shape = sp1;
-    // prim2.world_from_prim = Transform::translate(vec3(1.4,1,-1));
-    // ListAggregate list;
-    // list.add(&prim1);
-    // list.add(&prim2);
-
-    ListAggregate* list = nullptr;
+    Scene* scene = nullptr;
     try {
-        list = load("test1.scene");
+        scene = load("test1.scene");
     }
     catch (std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl;
@@ -85,7 +68,7 @@ int main (int argc, char* argv[])
                 Isect isect;
                 Spectrum L(0.0f);
 
-                if (list->intersect(ray, &isect)) {
+                if (scene->intersect(ray, &isect)) {
                     BSDF* bsdf = isect.mat->get_bsdf(isect.p);
                     Transform tangent_from_world = build_tangent_from_world(isect.n);
                     vec3 wo_t = tangent_from_world.vector(-ray.d);
@@ -93,7 +76,7 @@ int main (int argc, char* argv[])
                     Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
                     delete bsdf;
                     vec3 wo = inverse(tangent_from_world).vector(wi_t);
-                    L = f * (float)fmax(dot(wo, normalize(vec3(0,0,1))), 0.f) * 10.0f;
+                    L = f * (float)fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f;
                 }
                 else L = Spectrum(0,1,0);
 
