@@ -65,3 +65,31 @@ Shape* make_plane ()
 {
     return new Plane();
 }
+
+
+class Rectangle : public Shape
+{
+public:
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        if (ray.d.y == 0) return false;
+
+        float t = -ray.o.y / ray.d.y;
+
+        if (t < ray.tmin || t > ray.tmax) return false;
+
+        vec3 p = ray.o + t*ray.d;
+        if (p.x < -1 || p.x > 1 || p.z < -1 || p.z > 1) return false;
+        
+        ray.tmax = t;
+        isect->p = p;
+        isect->n = vec3(0,0,1);
+
+        return true;
+    }
+};
+
+Shape* make_rectangle ()
+{
+    return new Rectangle();
+}

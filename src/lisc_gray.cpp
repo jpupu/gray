@@ -22,6 +22,7 @@ public:
 		REGISTER_METHOD(diffuse);
 		REGISTER_METHOD(mirror);
 		REGISTER_METHOD(plane);
+		REGISTER_METHOD(rectangle);
 	}
 
 	Datum prim (const List& form)
@@ -58,6 +59,13 @@ public:
 	Datum plane (const List& form)
 	{
 		auto* s = make_plane();
+		shapes.push_back(s);
+		return makelist("shape_", shapes.size()-1);
+	}
+
+	Datum rectangle (const List& form)
+	{
+		auto* s = make_rectangle();
 		shapes.push_back(s);
 		return makelist("shape_", shapes.size()-1);
 	}
