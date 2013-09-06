@@ -55,7 +55,7 @@ public:
 
         ray.tmax = t;
         isect->p = ray.o + t*ray.d;
-        isect->n = vec3(0,0,1);
+        isect->n = vec3(0,1,0);
 
         return true;
     }
@@ -83,7 +83,7 @@ public:
         
         ray.tmax = t;
         isect->p = p;
-        isect->n = vec3(0,0,1);
+        isect->n = vec3(0,1,0);
 
         return true;
     }
