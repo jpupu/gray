@@ -18,6 +18,7 @@ public:
 		: LiscGray(ev), linalg(linalg)
 	{
 		REGISTER_METHOD(prim);
+		REGISTER_METHOD(lightprim);
 		REGISTER_METHOD(sphere);
 		REGISTER_METHOD(diffuse);
 		REGISTER_METHOD(mirror);
@@ -43,6 +44,31 @@ public:
 		p->mat = m;
 		p->shape = s;
 		p->world_from_prim = xform;
+		p->Le = Spectrum(0);
+
+		primitives.push_back(p);
+
+		return makelist("prim_", primitives.size()-1,0,0);
+	}
+	Datum lightprim (const List& form)
+	{
+		List shape = eval(form.at(1));
+		int shapenum = shape.at(1);
+		Shape* s = shapes.at(shapenum);
+
+		List mat = eval(form.at(2));
+		int matnum = mat.at(1);
+		Material* m = materials.at(matnum);
+
+		List xforml = eval(form.at(3));
+		int xformnum = xforml.at(1);
+		Transform& xform = linalg->xforms[xformnum];
+
+		auto* p = new GeometricPrimitive();
+		p->mat = m;
+		p->shape = s;
+		p->world_from_prim = xform;
+		p->Le = Spectrum(100.0f);
 
 		primitives.push_back(p);
 

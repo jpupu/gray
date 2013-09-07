@@ -9,7 +9,7 @@ typedef vec3 Spectrum;
 
 struct Ray
 {
-    static constexpr float epsilon = 1e-6f;
+    static constexpr float epsilon = 1e-5f;
 
     vec3 o;
     vec3 d;
@@ -33,6 +33,7 @@ struct Isect
     vec3 p;
     vec3 n;
     Material* mat;
+    Spectrum Le; // this is oversimplified
 };
 
 
@@ -99,6 +100,7 @@ public:
     Shape* shape;
     Transform world_from_prim;
     mutable Transform prim_from_world;
+    Spectrum Le;
 
     bool intersect (Ray& r, Isect* isect) const
     {
@@ -113,6 +115,7 @@ public:
         isect->p = world_from_prim.point(isect->p);
         isect->n = normalize(world_from_prim.normal(isect->n));
         isect->mat = mat;
+        isect->Le = Le;
         return true;
     }
 };

@@ -92,9 +92,9 @@ class PathIntegrator : public SurfaceIntegrator
             Linc = Li(newray, newisect, scene);
         }
         else {
-            Linc = Spectrum(fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f);
+            Linc = Spectrum(0.0f);//fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f);
         }
-        Spectrum L = f * Linc / russian_p;
+        Spectrum L = f * Linc / russian_p + isect.Le;
         return L;
     }
 };
@@ -103,7 +103,8 @@ class PathIntegrator : public SurfaceIntegrator
 
 int main (int argc, char* argv[])
 {
-    Film film(512,512);
+    // Film film(512,512);
+    Film film(256,256);
 
     Scene* scene = nullptr;
     try {
@@ -114,7 +115,7 @@ int main (int argc, char* argv[])
         return 1;
     }
 
-    int spp = 100;
+    int spp = 200 * 2;
 
     SurfaceIntegrator* surf_integ = new PathIntegrator();
 
