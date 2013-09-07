@@ -72,8 +72,19 @@ class NormalIntegrator : public SurfaceIntegrator
 
 class PathIntegrator : public SurfaceIntegrator
 {
+public:
+    int rays;
+    int terminated;
+    int arrived;
+
+    PathIntegrator ()
+        : rays(0), terminated(0), arrived(0)
+    { }
+
     virtual Spectrum Li (const Ray& ray, const Isect& isect, const Scene* scene)
     {
+        rays++;
+
         BSDF* bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
@@ -82,13 +93,20 @@ class PathIntegrator : public SurfaceIntegrator
         delete bsdf;
         vec3 wo = inverse(tangent_from_world).vector(wi_t);
 
-        constexpr float russian_p = 0.9;
-        if (frand() > russian_p) return Spectrum(0.0f);
+        constexpr float russian_p = 0.95;
+        if (frand() > russian_p) {
+            terminated++;
+            return Spectrum(0.0f);
+        }
 
         Ray newray = Ray(isect.p, wo);
         Isect newisect;
         Spectrum Linc;
-        if (scene->intersect(newray, &newisect))  {
+        if (isect.Le != Spectrum(0.0f)) {
+            arrived++;
+            Linc = Spectrum(0.0f);
+        }
+        else if (scene->intersect(newray, &newisect))  {
             Linc = Li(newray, newisect, scene);
         }
         else {
@@ -115,9 +133,9 @@ int main (int argc, char* argv[])
         return 1;
     }
 
-    int spp = 200 * 2;
+    int spp = 150 * 10;
 
-    SurfaceIntegrator* surf_integ = new PathIntegrator();
+    PathIntegrator* surf_integ = new PathIntegrator();
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
@@ -143,6 +161,14 @@ int main (int argc, char* argv[])
     }
 
     film.save("out.png");
+
+    int paths = film.xres*film.yres*spp;
+    printf("Rays shot: %d\n", surf_integ->rays);
+    printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
+    printf("Paths shot: %d\n", paths);
+    printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
+    printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
+    printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
 
     return 0;
 }
