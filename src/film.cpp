@@ -1,5 +1,8 @@
 #include "film.hpp"
 #include "lodepng.h"
+extern "C" {
+#  include "rgbe.h"
+}
 // #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -42,56 +45,93 @@ void Film::save_png (const char* filename)
     lodepng_encode24_file(filename, &rgb[0], xres, yres);
 }
 
+void Film::save_rgbe (const char* filename)
+{
+    FILE* fp = fopen(filename, "wb");
+    RGBE_WriteHeader(fp, xres, yres, NULL);
+    for (int y = yres-1; y >= 0; y--) {
+        for (int x = 0; x < xres; x++) {
+            Spectrum v = data[x+y*xres].normalized();
+            RGBE_WritePixels(fp, &v.x, 1);
+        }
+    }
+    fclose(fp);
+}
+
+void Film::save_float (const char* filename)
+{
+    FILE* fp = fopen(filename, "wb");
+    fwrite(&xres, 4, 1, fp);
+    fwrite(&yres, 4, 1, fp);
+    for (int y = 0; y < yres; y++) {
+        for (int x = 0; x < xres; x++) {
+            Spectrum v = data[x+y*xres].normalized();
+            fwrite(&v, sizeof(Spectrum), 1, fp);
+        }
+    }
+    fclose(fp);
+}
+
+void Film::load_float (const char* filename)
+{
+    FILE* fp = fopen(filename, "rb");
+    fread(&xres, 4, 1, fp);
+    fread(&yres, 4, 1, fp);
+    data.resize(xres*yres);
+    for (int y = 0; y < yres; y++) {
+        for (int x = 0; x < xres; x++) {
+            Spectrum v;
+            fread(&v, sizeof(Spectrum), 1, fp);
+            data[x+y*xres].L = v;
+            data[x+y*xres].weight = 1;
+        }
+    }
+    fclose(fp);
+}
+
 void Film::tone_mapping ()
 {
-//     // Calculate root mean square.
-//     float lum_sq_sum = 0;
-//     for (int i = 0; i < xres*yres; i++) {
-//         float l = data[i].luminosity();
-//         lum_sq_sum += l*l;
-//     }
-//     float rms = sqrtf(lum_sq_sum / (xres*yres));
+    // Erik Reinhard
+    // Photographic Tone Reproduction for Digital Images
+    // (Reinhard '02)
 
-    /*
-     * Erik Reinhard:
-     * Parameter Estimation for Photographic Tone Reproduction
-     */
+    int N = xres*yres;
 
-    float Lmax = 0;
-    float Lmin = 20000;
+    for (int ch = 0; ch < 3; ch++) {
 
-    const float delta = 0.01; // small constant
-    // log average luminance
-    float Lav = 0;
-    float Lmean = 0;
-    for (int i = 0; i < xres*yres; i++) {
-        float Lw = data[i].luminosity();
-        if (Lw > Lmax) Lmax = Lw;
-        if (Lw < Lmin) Lmin = Lw;
-        Lav += log(delta + Lw);
-        Lmean += Lw;
+        double sum(0.0);
+        double Lmin = 999999;
+        double Lmax = 0;
+        for (auto& d : data) {
+            double Lw = d.normalized()[ch]*10;
+            sum += log(0.00001 + Lw);
+            if (Lw < Lmin) Lmin = Lw;
+            if (Lw > Lmax) Lmax = Lw;
+        }
+        // Log average luminance, Lw
+        double Lw = exp(sum /double(N));
+
+        printf("Range of values: %f -- %f\n", Lmin, Lmax);
+        printf("Dynamix range:   %d:1\n", (int)(Lmax/Lmin));
+
+        // the image key value 
+        const double alpha(0.18);
+        const double Lwhite = Lmax;
+        /// the following are from Erik Reinhard:
+        /// Parameter Estimation for Photographic Tone Reproduction
+        // const double alpha = 0.18 * pow(4, (2*log2(Lw)-log2(Lmin)-log2(Lmax)) / (log2(Lmax)-log2(Lmin)));
+        // const double Lwhite = 1.2 * pow(2, log2(Lmax) - log2(Lmin) - 5);
+        const double Lwhite2 = Lwhite*Lwhite;
+        const double gamma = 2.2;
+        for (auto& d : data) {
+            double L = alpha / Lw * d.normalized()[ch];
+
+            double Ld = L * (1 + L / Lwhite2) / (1 + L);
+
+            d.tonemapped[ch] = pow(Ld, 1/gamma);
+
+        }
     }
-    Lav = exp(Lav / (xres*yres));
-    Lmean /= xres*yres;
-    Lmin += delta;
 
-    const float alpha = 0.18 * powf(4, (2*log2(Lav)-log2(Lmin)-log2(Lmax)) / (log2(Lmax)-log2(Lmin)));
-
-    const float Lwhite = 1.2 * powf(2, log2(Lmax) - log2(Lmin) - 5);
-
-    // float Lwhite2 = Lwhite*Lwhite;
-    for (int i = 0; i < xres*yres; i++) {
-        float L = alpha / Lav * data[i].luminosity();
-//         float Ld = L * (1 + L/Lwhite2) / (1 + L);
-        float Ld = L / (1 + L);
-        data[i].tonemapped = data[i].normalized() * Ld;
-    }
-
-    printf("Lmin %f\n", Lmin);
-    printf("Lmax %f\n", Lmax);
-    printf("Lmean %f\n", Lmean);
-    printf("Lav %f\n", Lav);
-    printf("alpha %f\n", alpha);
-    printf("Lwhite %f\n", Lwhite);
 }
 

@@ -93,7 +93,7 @@ public:
         delete bsdf;
         vec3 wo = inverse(tangent_from_world).vector(wi_t);
 
-        constexpr float russian_p = 0.95;
+        constexpr float russian_p = 0.99;
         if (frand() > russian_p) {
             terminated++;
             return Spectrum(0.0f);
@@ -123,7 +123,9 @@ int main (int argc, char* argv[])
 {
     // Film film(512,512);
     Film film(256,256);
-
+#if 1
+    film.load_float("out.float");
+#else
     Scene* scene = nullptr;
     try {
         scene = load("test1.scene");
@@ -133,7 +135,7 @@ int main (int argc, char* argv[])
         return 1;
     }
 
-    int spp = 150 * 10;
+    int spp = 200 * 20;//150 * 10;
 
     PathIntegrator* surf_integ = new PathIntegrator();
 
@@ -159,9 +161,6 @@ int main (int argc, char* argv[])
             }
         }
     }
-
-    film.save("out.png");
-
     int paths = film.xres*film.yres*spp;
     printf("Rays shot: %d\n", surf_integ->rays);
     printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
@@ -169,6 +168,13 @@ int main (int argc, char* argv[])
     printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
     printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
     printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
+
+    film.save_float("out.float");
+#endif
+    film.save("out.png");
+    film.save_rgbe("out.hdr");
+    // film.save_float("out.float");
+
 
     return 0;
 }

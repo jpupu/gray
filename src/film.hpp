@@ -26,7 +26,7 @@ struct Pixel
     float luminosity () const
     {
 
-        return L[0] * 0.27 + L[1] * 0.67 + L[2] * 0.06;
+        return (L[0] * 0.27 + L[1] * 0.67 + L[2] * 0.06) / weight;
     }
 };
 
@@ -40,6 +40,9 @@ public:
 
     void save (const char* filename);
 
+    void save_float (const char* filename);
+    void save_rgbe (const char* filename);
+    void load_float (const char* filename);
 public:
     int xres, yres;
 
