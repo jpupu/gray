@@ -3,7 +3,7 @@
 #include <iostream>
 #include "materials.hpp"
 #include "util.hpp"
-
+#include <cstring>
 
 
 
@@ -121,24 +121,46 @@ public:
 
 int main (int argc, char* argv[])
 {
-    // Film film(512,512);
-    Film film(256,256);
-#if 1
-    film.load_float("out.float");
-#else
+    int resx = 256;
+    int resy = 256;
+    int spp = 100;
+    const char* input_filename = "test1.scene";
+    const char* output_filename = "out";
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-r") == 0) {
+            resx = atol(argv[++i]);
+            resy = atol(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-s") == 0) {
+            spp = atol(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-o") == 0) {
+            output_filename = argv[++i];
+        }
+        else {
+            input_filename = argv[i];
+        }
+    }
+
+
+
     Scene* scene = nullptr;
     try {
-        scene = load("test1.scene");
+        scene = load(input_filename);
     }
     catch (std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl;
         return 1;
     }
 
-    int spp = 200 * 20;//150 * 10;
+    printf("Resolution: %d x %d\n", resx, resy);
+    printf("Samples per pixel: %d\n", spp);
 
     PathIntegrator* surf_integ = new PathIntegrator();
 
+    Film film(resx, resy);
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
             for (int s = 0; s < spp; s++) {
@@ -169,12 +191,13 @@ int main (int argc, char* argv[])
     printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
     printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
 
-    film.save_float("out.float");
-#endif
-    film.save("out.png");
-    film.save_rgbe("out.hdr");
-    // film.save_float("out.float");
-
+    char filename[256];
+    sprintf(filename, "%s.png", output_filename);
+    film.save(filename);
+    sprintf(filename, "%s.float", output_filename);
+    film.save_float(filename);
+    sprintf(filename, "%s.hdr", output_filename);
+    film.save_rgbe(filename);
 
     return 0;
 }
