@@ -91,7 +91,7 @@ public:
         vec3 wi_t;
         Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
         delete bsdf;
-        vec3 wo = inverse(tangent_from_world).vector(wi_t);
+        vec3 wi = inverse(tangent_from_world).vector(wi_t);
 
         constexpr float russian_p = 0.99;
         if (frand() > russian_p) {
@@ -99,20 +99,23 @@ public:
             return Spectrum(0.0f);
         }
 
-        Ray newray = Ray(isect.p, wo);
+        Ray newray = Ray(isect.p, wi);
         Isect newisect;
-        Spectrum Linc;
+        Spectrum Li;
         if (isect.Le != Spectrum(0.0f)) {
             arrived++;
-            Linc = Spectrum(0.0f);
+            Li = Spectrum(0.0f);
         }
         else if (scene->intersect(newray, &newisect))  {
-            Linc = Li(newray, newisect, scene);
+            Li = this->Li(newray, newisect, scene);
         }
         else {
-            Linc = Spectrum(0.0f);//fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f);
+            Li = Spectrum(0.0f);//fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f);
         }
-        Spectrum L = f * Linc / russian_p + isect.Le;
+        Li /= russian_p;
+
+        // Light transport equation.
+        Spectrum L = isect.Le + f * Li * cos_theta(wi_t);
         return L;
     }
 };
@@ -177,7 +180,7 @@ int main (int argc, char* argv[])
                 if (scene->intersect(ray, &isect)) {
                     L = surf_integ->Li(ray, isect, scene);
                 }
-                else L = Spectrum(0,1,0);
+                else L = Spectrum(0,0,0);
 
                 film.add_sample(xf,yf, L);
             }

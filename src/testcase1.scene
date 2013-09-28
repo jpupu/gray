@@ -1,0 +1,13 @@
+(
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 10 0) (rotate 180 0 0 1) (scale 2 1 .5)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate -.9 -.1 0) (rotate 0 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate -.7 -.1 0) (rotate 10 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate -.5 -.1 0) (rotate 20 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate -.3 -.1 0) (rotate 30 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate -.1 -.1 0) (rotate 40 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate  .1 -.1 0) (rotate 50 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate  .3 -.1 0) (rotate 60 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate  .5 -.1 0) (rotate 70 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate  .7 -.1 0) (rotate 80 1 0 0) (scale .1 1 1)))
+(prim (rectangle) (diffuse 1 1 1) (t* (translate  .9 -.1 0) (rotate 90 1 0 0) (scale .1 1 1)))
+)
