@@ -10,11 +10,13 @@ OBJS = main.o film.o shapes.o materials.o rgbe.o lodepng.o lisc_gray.o lisc_lina
 
 .PHONY: run clean
 
+default: gray.exe
+
 run: gray
 	./gray.exe
 
 clean:
 	rm gray.exe $(OBJS)
 
-gray: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o gray $(OBJS)
+gray.exe: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o gray.exe $(OBJS)
