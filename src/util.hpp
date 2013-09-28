@@ -67,5 +67,24 @@ vec3 sample_hemisphere (const vec2& uv)
 }
 
 
+/** Compute cosine of angle between w and normal (0,0,1).
+ * w must be unit vector.
+ */
+inline
+float cos_theta (const vec3& w)
+{
+    return w.z;
+}
+
+/** Compute absolute of cosine of angle between w and normal (0,0,1).
+ * w must be unit vector.
+ */
+inline
+float abs_cos_theta (const vec3& w)
+{
+    return abs(w.z);
+}
+
+
  
 #endif /* end of include guard: UTIL_H__ */
