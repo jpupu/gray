@@ -82,7 +82,7 @@ float cos_theta (const vec3& w)
 inline
 float abs_cos_theta (const vec3& w)
 {
-    return abs(w.z);
+    return fabs(w.z);
 }
 
 
