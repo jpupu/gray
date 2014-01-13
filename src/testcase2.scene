@@ -1,0 +1,9 @@
+(
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 -10 0) (rotate  0 0 0 1) (scale 10)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0  10 0) (rotate 180 0 0 1) (scale 10)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate -10 0 0) (rotate -90 0 0 1) (scale 10)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate  10 0 0) (rotate  90 0 0 1) (scale 10)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 0 -10) (rotate -90 1 0 0) (scale 10)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 0  10) (rotate  90 1 0 0) (scale 10)))
+(prim (sphere) (mirror 1 1 1) (t* (scale 1)))
+)
