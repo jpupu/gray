@@ -85,6 +85,25 @@ float abs_cos_theta (const vec3& w)
     return fabs(w.z);
 }
 
+/** Compute sine squared of angle between w and normal (0,0,1).
+ * w must be unit vector.
+ */
+inline
+float sin2_theta (const vec3& w)
+{
+    return 1 - cos_theta(w) * cos_theta(w);
+}
+
+/** Compute sine of angle between w and normal (0,0,1).
+ * w must be unit vector.
+ */
+inline
+float sin_theta (const vec3& w)
+{
+    return sqrtf(sin2_theta(w));
+}
+
+
 
  
 #endif /* end of include guard: UTIL_H__ */
