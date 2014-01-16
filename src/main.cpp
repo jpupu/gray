@@ -169,6 +169,7 @@ int main (int argc, char* argv[])
 
     Film film(resx, resy);
     for (int yp = 0; yp < film.yres; yp++) {
+        printf("%d\r", yp);
         for (int xp = 0; xp < film.xres; xp++) {
             for (int s = 0; s < spp; s++) {
                 float xf = (xp+frand()) / (float)film.xres;
