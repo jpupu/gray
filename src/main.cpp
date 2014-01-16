@@ -91,6 +91,10 @@ public:
         vec3 wi_t;
         Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
         delete bsdf;
+        if (f == Spectrum(0.0f)) {
+            terminated++;
+            return Spectrum(0.0f);
+        }
         vec3 wi = inverse(tangent_from_world).vector(wi_t);
 
         constexpr float russian_p = 0.99;
@@ -115,7 +119,7 @@ public:
         Li /= russian_p;
 
         // Light transport equation.
-        Spectrum L = isect.Le + f * Li * cos_theta(wi_t);
+        Spectrum L = isect.Le + f * Li * abs_cos_theta(wi_t);
         return L;
     }
 };
