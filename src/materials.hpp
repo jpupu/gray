@@ -5,6 +5,7 @@
 
 Material* make_diffuse (const Spectrum& reflectance);
 Material* make_mirror (const Spectrum& reflectance);
+Material* make_glass (const Spectrum& transmittance);
 
 
  

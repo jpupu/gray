@@ -83,7 +83,6 @@ public:
     }
 };
 
-
 class Lambertian : public BSDF
 {
 public:
@@ -128,6 +127,88 @@ public:
     }
 };
 
+class SpecularTransmission : public BSDF
+{
+public:
+    // transmission scale factor
+    Spectrum T;
+    FresnelDielectric* fresnel;
+
+    SpecularTransmission (const Spectrum& T, FresnelDielectric* f)
+        : T(T), fresnel(f)
+    { }
+
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    {
+        float cos_o = cos_theta(wo);
+        float eo = fresnel->eta_i;
+        float ei = fresnel->eta_t;
+        // swap indices if exiting instead of entering media
+        bool entering = (cos_o >= 0);
+        if (!entering) { std::swap(eo, ei); }
+
+        float sin2_o = sin2_theta(wo);
+        // Snell's law: eta_o * sin_o = eta_i * sin_i
+        //              sin_o / sin_i = eta_i / eta_o
+        //              sin2_i / sin2_o = (eta_o / eta_i)^2
+        //              sin2_i = (eta_o / eta_i)^2 * sin2_o
+        float eta = eo / ei;
+        float sin2_i = eta*eta * sin2_o;
+
+        // Check for total internal reflection
+        if (sin2_i >= 1.0) {
+            return Spectrum(0.0f);
+        }
+
+        // Trigonometric identity: sin2 x + cos2 x = 1
+        float cos_i = sqrtf( 1 - sin2_i );
+
+        // Now we have wo.z.
+        // To get x and y, we mirror around the point to get unbent
+        // transmission vector wu.
+        //
+        //      wu = -wo
+        //
+        // Project those to the XY plane:
+        //
+        //      wu' = -wo'  (= -wo.xy)
+        //
+        // Now to get wi.xy we calculate projection wi'
+        // by scaling wu' appropriately (see pbrt figure 8.11):
+        //
+        //       wi' = wu' * sin_i / sin_o
+        //           = wu' * eta_o / eta_i    (from Snell's law)
+
+        (*wi).x = eta * -wo.x;
+        (*wi).y = eta * -wo.y;
+        (*wi).z = entering ? -cos_i : cos_i;
+
+        return (eta*eta) * (Spectrum(1) - (*fresnel)(cos_i)) * T / abs_cos_theta(*wi);
+    }
+};
+
+void ttt()
+{
+    FresnelDielectric fr(1.0, 1.3);
+    SpecularTransmission sp(Spectrum(1.0f), &fr);
+    vec3 wo, wi;
+    Spectrum l;
+    wo = normalize(vec3(1,0,1));
+    l = sp.sample(wo, &wi, vec2(0,0));
+    printf("enter:\n");
+    printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
+    printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
+    printf("l = %f %f %f\n", l.x,l.y,l.z);
+
+    wo = normalize(vec3(1,0,-1));
+    l = sp.sample(wo, &wi, vec2(0,0));
+    printf("exit:\n");
+    printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
+    printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
+    printf("l = %f %f %f\n", l.x,l.y,l.z);
+}
+
+
 
 class Diffuse : public Material
 {
@@ -161,6 +242,34 @@ public:
 
 };
 
+class Glass : public Material
+{
+public:
+    Glass (const Spectrum& R)
+        : R(R)
+    { }
+
+    Spectrum R;
+
+    virtual BSDF* get_bsdf (const vec3& p) const
+    {
+        // These should be scaled by 2, because p == 1/2.
+        // But we can't scale a BSDF.
+        // Instead we probably should return a combination BSDF.
+
+        // Actually, this randomized thing somehow fucks things up completely, whereas
+        // returning consistently just reflection or transmission works.
+        if (frand() < 0.5f) {
+            return new SpecularReflection(R, new FresnelDielectric(1.0f, 1.3f));
+        }
+        else {
+            return new SpecularTransmission(R, new FresnelDielectric(1.0f, 1.3f));
+        }
+    }
+
+};
+
+
 
 
 Material* make_diffuse (const Spectrum& reflectance)
@@ -170,4 +279,8 @@ Material* make_diffuse (const Spectrum& reflectance)
 Material* make_mirror (const Spectrum& reflectance)
 {
 	return new Mirror(reflectance);
+}
+Material* make_glass (const Spectrum& transmittance)
+{
+    return new Glass(transmittance);
 }

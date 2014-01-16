@@ -22,6 +22,7 @@ public:
 		REGISTER_METHOD(sphere);
 		REGISTER_METHOD(diffuse);
 		REGISTER_METHOD(mirror);
+		REGISTER_METHOD(glass);
 		REGISTER_METHOD(plane);
 		REGISTER_METHOD(rectangle);
 	}
@@ -122,6 +123,21 @@ public:
 		}
 
 		auto* s = make_mirror(v);
+		materials.push_back(s);
+		return makelist("material_", materials.size()-1);
+	}
+
+	Datum glass (const List& form)
+	{
+		if (form.size() != 4) {
+			throw std::runtime_error("glass must have 3 elements");
+		}
+		glm::vec3 v;
+		for (int i = 1; i < 4; i++) {
+			v[i-1] = eval(form.at(i));
+		}
+
+		auto* s = make_glass(v);
 		materials.push_back(s);
 		return makelist("material_", materials.size()-1);
 	}
