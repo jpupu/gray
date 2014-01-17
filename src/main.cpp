@@ -156,56 +156,70 @@ int main (int argc, char* argv[])
     Scene* scene = nullptr;
     try {
         scene = load(input_filename);
+
+        printf("Resolution: %d x %d\n", resx, resy);
+        printf("Samples per pixel: %d\n", spp);
+
+        PathIntegrator* surf_integ = new PathIntegrator();
+
+        Film film(resx, resy);
+        for (int yp = 0; yp < film.yres; yp++) {
+            printf("%d\r", yp);
+            for (int xp = 0; xp < film.xres; xp++) {
+                for (int s = 0; s < spp; s++) {
+                    float xf = (xp+frand()) / (float)film.xres;
+                    float yf = (yp+frand()) / (float)film.yres;
+
+                    vec3 orig(0,0,2);
+                    vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
+
+                    Ray ray(orig, dir);
+                    Isect isect;
+                    Spectrum L(0.0f);
+
+                    if (scene->intersect(ray, &isect)) {
+                        L = surf_integ->Li(ray, isect, scene);
+                    }
+                    else L = Spectrum(0,0,0);
+
+                    film.add_sample(xf,yf, L);
+                }
+            }
+        }
+        int paths = film.xres*film.yres*spp;
+        printf("Rays shot: %d\n", surf_integ->rays);
+        printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
+        printf("Paths shot: %d\n", paths);
+        printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
+        printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
+        printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
+
+        char filename[256];
+        sprintf(filename, "%s.png", output_filename);
+        film.save(filename);
+        sprintf(filename, "%s.float", output_filename);
+        film.save_float(filename);
+        sprintf(filename, "%s.hdr", output_filename);
+        film.save_rgbe(filename);
+
     }
-    catch (std::exception& e) {
+    catch (const std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl;
         return 1;
     }
-
-    printf("Resolution: %d x %d\n", resx, resy);
-    printf("Samples per pixel: %d\n", spp);
-
-    PathIntegrator* surf_integ = new PathIntegrator();
-
-    Film film(resx, resy);
-    for (int yp = 0; yp < film.yres; yp++) {
-        printf("%d\r", yp);
-        for (int xp = 0; xp < film.xres; xp++) {
-            for (int s = 0; s < spp; s++) {
-                float xf = (xp+frand()) / (float)film.xres;
-                float yf = (yp+frand()) / (float)film.yres;
-
-                vec3 orig(0,0,2);
-                vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
-
-                Ray ray(orig, dir);
-                Isect isect;
-                Spectrum L(0.0f);
-
-                if (scene->intersect(ray, &isect)) {
-                    L = surf_integ->Li(ray, isect, scene);
-                }
-                else L = Spectrum(0,0,0);
-
-                film.add_sample(xf,yf, L);
-            }
-        }
+    catch (const std::string& e) {
+        std::cerr << "Exception caught: " << e << std::endl;
+        return 1;
     }
-    int paths = film.xres*film.yres*spp;
-    printf("Rays shot: %d\n", surf_integ->rays);
-    printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
-    printf("Paths shot: %d\n", paths);
-    printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
-    printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
-    printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
+    catch (const char* e) {
+        std::cerr << "Exception caught: " << e << std::endl;
+        return 1;
+    }
+    catch (...) {
+        std::cerr << "Unknown exception caught!" << std::endl;
+        return 1;
+    }
 
-    char filename[256];
-    sprintf(filename, "%s.png", output_filename);
-    film.save(filename);
-    sprintf(filename, "%s.float", output_filename);
-    film.save_float(filename);
-    sprintf(filename, "%s.hdr", output_filename);
-    film.save_rgbe(filename);
 
     return 0;
 }
