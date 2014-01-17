@@ -8,6 +8,8 @@
 (prim (plane) (diffuse .8 .8 .8) (t* (translate 0 -1.2 0) (rotate 5 0 0 1)))
 (prim (rectangle) (diffuse .8 .6 .3) (t* (translate -1 0 0) (rotate -90 0 0 1)))
 (prim (rectangle) (diffuse .2 .6 .8) (t* (translate 1 0 0) (rotate 90 0 0 1)))
+(prim (rectangle) (diffuse .61 .32 .07) (t* (translate -1 0 0) (rotate -90 0 0 1)))
+(prim (rectangle) (diffuse .03 .32 .61) (t* (translate 1 0 0) (rotate 90 0 0 1)))
 (prim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 1 0) (rotate 180 0 0 1)))
 (prim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 -1 0) (rotate 0 0 0 1)))
 (prim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 0 -1) (rotate 90 1 0 0)))
