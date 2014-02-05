@@ -162,31 +162,45 @@ int main (int argc, char* argv[])
 
         PathIntegrator* surf_integ = new PathIntegrator();
 
-        Film film(resx, resy);
-        for (int yp = 0; yp < film.yres; yp++) {
-            printf("%d\r", yp);
-            for (int xp = 0; xp < film.xres; xp++) {
-                for (int s = 0; s < spp; s++) {
-                    float xf = (xp+frand()) / (float)film.xres;
-                    float yf = (yp+frand()) / (float)film.yres;
+        int block_size = 32;
 
-                    vec3 orig(0,0,2);
-                    vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
+        Film wholefilm(resx, resy);
+        for (int by = 0; by < (resy + block_size-1) / block_size; by++) {
+            int blh = std::min(block_size, resy - by*block_size);
+            for (int bx = 0; bx < (resx + block_size-1) / block_size; bx++) {
+                int blw = std::min(block_size, resx - bx*block_size);
 
-                    Ray ray(orig, dir);
-                    Isect isect;
-                    Spectrum L(0.0f);
+                printf("Block %d,%d (%dx%d)\n", bx, by, blw, blh);
+                Film film(blw, blh);
+                for (int yp = 0; yp < film.yres; yp++) {
+                    printf("%d\r", yp);
+                    for (int xp = 0; xp < film.xres; xp++) {
+                        for (int s = 0; s < spp; s++) {
+                            float xf = (xp+frand()) / (float)film.xres;
+                            float yf = (yp+frand()) / (float)film.yres;
 
-                    if (scene->intersect(ray, &isect)) {
-                        L = surf_integ->Li(ray, isect, scene);
+                            vec3 orig(0,0,2);
+                            // vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
+                            vec3 dir(normalize(vec3(((bx*block_size+xf*blw)/resx)*2-1,
+                                                    ((by*block_size+yf*blh)/resy)*2-1, -1)));
+
+                            Ray ray(orig, dir);
+                            Isect isect;
+                            Spectrum L(0.0f);
+
+                            if (scene->intersect(ray, &isect)) {
+                                L = surf_integ->Li(ray, isect, scene);
+                            }
+                            else L = Spectrum(0,0,0);
+
+                            film.add_sample(xf,yf, L);
+                        }
                     }
-                    else L = Spectrum(0,0,0);
-
-                    film.add_sample(xf,yf, L);
                 }
+                wholefilm.merge(film, bx*block_size, by*block_size);
             }
         }
-        int paths = film.xres*film.yres*spp;
+        int paths = wholefilm.xres*wholefilm.yres*spp;
         printf("Rays shot: %d\n", surf_integ->rays);
         printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
         printf("Paths shot: %d\n", paths);
@@ -196,11 +210,11 @@ int main (int argc, char* argv[])
 
         char filename[256];
         sprintf(filename, "%s.png", output_filename);
-        film.save(filename);
+        wholefilm.save(filename);
         sprintf(filename, "%s.float", output_filename);
-        film.save_float(filename);
+        wholefilm.save_float(filename);
         sprintf(filename, "%s.hdr", output_filename);
-        film.save_rgbe(filename);
+        wholefilm.save_rgbe(filename);
 
     }
     catch (const std::exception& e) {

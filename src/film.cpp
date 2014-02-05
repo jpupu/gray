@@ -19,6 +19,17 @@ void Film::add_sample (float x, float y, const Spectrum& s)
     data[xi + yi*xres].add(s, 1.0);
 }
 
+void Film::merge (const Film& film, int xofs, int yofs)
+{
+    for (int y = 0; y < film.yres; y++) {
+        for (int x = 0; x < film.xres; x++) {
+            Pixel& dst = data[xofs + x + (yofs+ y)*xres];
+            const Pixel& src = film.data[x+y*film.xres];
+            dst.add(src.L, src.weight);
+        }
+    }
+}
+
 
 void Film::save (const char* filename)
 {
