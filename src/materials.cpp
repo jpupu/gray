@@ -209,6 +209,28 @@ void ttt()
 }
 
 
+class Texture
+{
+public:
+    virtual Spectrum sample (const vec2& uv, const vec3& p) const = 0;
+};
+
+class Checkers3D : public Texture
+{
+public:
+    Checkers3D (const Spectrum& a, const Spectrum& b)
+        : A(a), B(b)
+    { }
+
+    Spectrum sample (const vec2& uv, const vec3& p) const
+    {
+        vec3 pp = p * 5.0f;
+        return (((int)floor(pp.x) ^ (int)floor(pp.y) ^ (int)floor(pp.z)) & 1) ? A : B;
+    }
+
+private:
+    Spectrum A, B;
+};
 
 class Diffuse : public Material
 {
@@ -221,7 +243,8 @@ public:
 
     virtual BSDF* get_bsdf (const vec3& p) const
     {
-        return new Lambertian(R);
+        Spectrum r = Checkers3D(R, R*0.3f).sample(vec2(0,0), p);
+        return new Lambertian(r);
     }
 
 };
