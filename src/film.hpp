@@ -38,6 +38,8 @@ public:
     /// #x and #y are in range 0..1
     void add_sample (float x, float y, const Spectrum& s);
 
+    void merge (const Film& film, int xofs, int yofs);
+
     void save (const char* filename);
 
     void save_float (const char* filename);

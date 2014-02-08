@@ -4,8 +4,8 @@
 #include "materials.hpp"
 #include "util.hpp"
 #include <cstring>
-
-
+#include <thread>
+#include <list>
 
 class Texture
 {
@@ -125,12 +125,81 @@ public:
 };
 
 
+void render_block (Scene* scene, int spp,
+                   int fullresx, int fullresy,
+                   int xofs, int yofs,
+                   Film* filmp)
+{
+    Film& film = *filmp;
+    PathIntegrator* surf_integ = new PathIntegrator();
+
+    for (int yp = 0; yp < film.yres; yp++) {
+        for (int xp = 0; xp < film.xres; xp++) {
+            for (int s = 0; s < spp; s++) {
+                float xf = (xp+frand()) / (float)film.xres;
+                float yf = (yp+frand()) / (float)film.yres;
+
+                vec3 orig(0,0,2);
+                // vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
+                vec3 dir(normalize(vec3(((xofs+xf*film.xres)/fullresx)*2-1,
+                                        ((yofs+yf*film.yres)/fullresy)*2-1, -1)));
+
+                Ray ray(orig, dir);
+                Isect isect;
+                Spectrum L(0.0f);
+
+                if (scene->intersect(ray, &isect)) {
+                    L = surf_integ->Li(ray, isect, scene);
+                }
+                else L = Spectrum(0,0,0);
+
+                film.add_sample(xf,yf, L);
+            }
+        }
+    }
+}
+
+
+
+class RenderTask
+{
+public:
+    int bx, by;
+    int block_size;
+    int resx, resy;
+    int spp;
+    Scene* scene;
+    int blw, blh;
+    std::unique_ptr<Film> film;
+    std::thread th;
+    RenderTask () {}
+    RenderTask (int bx, int by, int block_size,
+                int resx, int resy, int spp,
+                Scene* scene)
+        : bx(bx), by(by), block_size(block_size),
+        resx(resx), resy(resy), spp(spp), scene(scene),
+        blw(std::min(block_size, resx - bx*block_size)),
+        blh(std::min(block_size, resy - by*block_size))
+    { }
+
+    void start ()
+    {
+        printf("Block %d,%d (%dx%d)\n", bx, by, blw, blh);
+        film.reset(new Film(blw, blh));
+        th = std::thread(render_block, scene, spp,
+                         resx, resy,
+                         bx * block_size, by * block_size,
+                         film.get());
+    }
+
+};
 
 int main (int argc, char* argv[])
 {
     int resx = 256;
     int resy = 256;
     int spp = 100;
+    unsigned int thread_count = 3;
     const char* input_filename = "test1.scene";
     const char* output_filename = "out";
 
@@ -145,6 +214,9 @@ int main (int argc, char* argv[])
         }
         else if (strcmp(argv[i], "-o") == 0) {
             output_filename = argv[++i];
+        }
+        else if (strcmp(argv[i], "-m") == 0) {
+            thread_count = atol(argv[++i]);
         }
         else {
             input_filename = argv[i];
@@ -162,31 +234,41 @@ int main (int argc, char* argv[])
 
         PathIntegrator* surf_integ = new PathIntegrator();
 
-        Film film(resx, resy);
-        for (int yp = 0; yp < film.yres; yp++) {
-            printf("%d\r", yp);
-            for (int xp = 0; xp < film.xres; xp++) {
-                for (int s = 0; s < spp; s++) {
-                    float xf = (xp+frand()) / (float)film.xres;
-                    float yf = (yp+frand()) / (float)film.yres;
+        int block_size = 32;
 
-                    vec3 orig(0,0,2);
-                    vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
-
-                    Ray ray(orig, dir);
-                    Isect isect;
-                    Spectrum L(0.0f);
-
-                    if (scene->intersect(ray, &isect)) {
-                        L = surf_integ->Li(ray, isect, scene);
-                    }
-                    else L = Spectrum(0,0,0);
-
-                    film.add_sample(xf,yf, L);
-                }
+        Film wholefilm(resx, resy);
+        std::vector<RenderTask*> tasks;
+        for (int by = 0; by < (resy + block_size-1) / block_size; by++) {
+            for (int bx = 0; bx < (resx + block_size-1) / block_size; bx++) {
+                tasks.push_back(new RenderTask(bx, by, block_size,
+                                resx, resy, spp,
+                                scene));
             }
         }
-        int paths = film.xres*film.yres*spp;
+
+        std::list<RenderTask*> active;
+        while (active.size() < thread_count && tasks.size() > 0) {
+            auto* t = tasks.back();
+            tasks.pop_back();
+            t->start();
+            active.push_back(t);
+        }
+        while (active.size() > 0) {
+            auto* t = active.front();
+            active.pop_front();
+            t->th.join();
+            wholefilm.merge(*t->film, t->bx*block_size, t->by*block_size);
+            delete t;
+            if (tasks.size() > 0) {
+                auto* t = tasks.back();
+                tasks.pop_back();
+                t->start();
+                active.push_back(t);
+            }
+        }
+
+
+        int paths = wholefilm.xres*wholefilm.yres*spp;
         printf("Rays shot: %d\n", surf_integ->rays);
         printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
         printf("Paths shot: %d\n", paths);
@@ -196,11 +278,11 @@ int main (int argc, char* argv[])
 
         char filename[256];
         sprintf(filename, "%s.png", output_filename);
-        film.save(filename);
+        wholefilm.save(filename);
         sprintf(filename, "%s.float", output_filename);
-        film.save_float(filename);
+        wholefilm.save_float(filename);
         sprintf(filename, "%s.hdr", output_filename);
-        film.save_rgbe(filename);
+        wholefilm.save_rgbe(filename);
 
     }
     catch (const std::exception& e) {
