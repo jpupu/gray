@@ -1,5 +1,7 @@
 LANG=en
 
+CC= gcc
+
 CXXFLAGS = -O3 -pedantic -Wall -Werror -g -ggdb --std=c++11
 
 INCLUDE = -I../../glm-0.9.4.1/
