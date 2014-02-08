@@ -1,7 +1,7 @@
 (
 (-- lightprim (sphere) (diffuse .8 .8 .8) (t* (translate -.5 .5 0) (scale .4)))
 (-- lightprim (sphere) (diffuse .8 .8 .8) (t* (translate 0 1.1 0) (scale .4)))
-(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 .99 0) (rotate 180 0 0 1) (scale .2)))
+(lightprim (rectangle) (diffuse .8 .8 .8) (t* (translate 0 .99 0) (rotate 180 0 0 1) (scale 1.2)))
 (prim (sphere) (diffuse .8 .8 .8) (t* (translate 0 -.4 0) (scale .6)))
 (-- prim (sphere) (diffuse 1 .39 .39) (t* (translate -.5 -.5 0) (scale .4)))
 (-- prim (sphere) (diffuse .8 .8 .8) (t* (translate .5 -.5 .3) (scale .4)))
