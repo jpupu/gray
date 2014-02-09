@@ -10,9 +10,160 @@ extern "C" {
 #include <cstdlib>
 #include <algorithm>
 #include <stdexcept>
-#include "lisc.hpp"
+// #include "lisc.hpp"
 
 using std::string;
+
+#include <memory>
+#include <list>
+#include <typeindex>
+
+struct Value;
+typedef std::list<Value> List;
+
+struct Value
+{
+    Value ()
+        : type(std::type_index(typeid(void)))
+    {}
+
+    template<typename T>
+    Value (T* v)
+        : type(std::type_index(typeid(T))),
+          atom(v)
+    {}
+    
+    template<typename T>
+    Value (const std::shared_ptr<T>& v)
+        : type(std::type_index(typeid(T))),
+          atom(v)
+    {}
+    
+    Value (List& v)
+        : type(std::type_index(typeid(void))),
+          list(v)
+    {}
+
+    std::type_index type;
+    std::shared_ptr<void> atom;
+    List list;
+
+    bool is_atom () const { return atom != nullptr; }
+    bool is_list () const { return !is_atom(); }
+
+    template<typename T>
+    void set (const std::shared_ptr<T>& v)
+    {
+        type = std::type_index(typeid(T));
+        atom = v;
+    }
+
+    template<typename T>
+    T& get () const
+    {
+        if (type != std::type_index(typeid(T))) {
+            throw std::logic_error("Value::get:Invalid type");
+        }
+         return *(T*)atom.get();
+    }
+};
+
+
+template<typename T>
+std::vector<std::shared_ptr<T>> get(const List& in)
+{
+    std::vector<std::shared_ptr<T>> out;
+    for (auto& x : in) {
+        if (x.type == std::type_index(typeid(T))) {
+            out.push_back(std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom)));
+        }
+    }
+    return out;
+}
+
+template<typename T, unsigned int N>
+std::vector<std::shared_ptr<T>> get(const List& in)
+{
+    std::vector<std::shared_ptr<T>> out;
+    for (auto& x : in) {
+        if (x.type == std::type_index(typeid(T))) {
+            out.push_back(std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom)));
+        }
+    }
+    if (out.size() != N) {
+        throw std::runtime_error("get: Bad number of items.");
+    }
+    return out;
+}
+
+template<typename T>
+std::shared_ptr<T> get_one(const List& in)
+{
+    std::shared_ptr<T> out;
+    for (auto& x : in) {
+        if (x.type == std::type_index(typeid(T))) {
+            if (out.get() == nullptr) {
+                out = std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom));
+            }
+            else {
+                throw std::runtime_error("get_one: Multiple found");
+            }
+        }
+    }
+    if (out.get() == nullptr) {
+        throw std::runtime_error("get_one: Item not found");
+    }
+    return out;
+}
+
+template<typename T>
+std::shared_ptr<T> get_first(const List& in)
+{
+    for (auto& x : in) {
+        if (x.type == std::type_index(typeid(T))) {
+            return std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom));
+        }
+    }
+    return std::shared_ptr<T>(nullptr);
+}
+
+
+int main ()
+{
+    List l;
+    l.push_back(Value(new double(0.8)));
+    l.push_back(Value(std::make_shared<std::string>("Hello")));
+    l.push_back(Value(new double(1.6)));
+    l.push_back(Value(new std::string("World")));
+    l.push_back(Value(new float(64.0f)));
+
+    std::cout << "DOUBLE:\n";
+    for (auto& x : get<double,2>(l)) {
+        std::cout << *x << std::endl;
+    }
+    std::cout << "STRING:\n";
+    for (auto& x : get<std::string>(l)) {
+        std::cout << *x << std::endl;
+    }
+    std::cout << "FLOAT:\n";
+    std::cout << *get_one<float>(l) << std::endl;
+    std::cout << "INT?:\n";
+    std::cout << (nullptr != get_first<int>(l)) << std::endl;
+
+    // std::cout << v.get<double>() << std::endl;
+    // std::cout << v.get<float>() << std::endl;
+}
+
+
+
+
+
+
+
+
+
+#if 0
+
 
 
 class Scanner
@@ -394,3 +545,4 @@ Datum Evaluator::evaluate_file (const std::string& filename)
 //   	return 0;
 // }
 
+#endif
