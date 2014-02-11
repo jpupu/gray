@@ -21,6 +21,8 @@ using std::string;
 struct Value;
 typedef std::list<Value> List;
 
+
+
 struct Value
 {
     Value ()
@@ -50,6 +52,8 @@ struct Value
 
     bool is_atom () const { return atom != nullptr; }
     bool is_list () const { return !is_atom(); }
+    template<typename T>
+    bool is () const { return type == std::type_index(typeid(T)); }
 
     template<typename T>
     void set (const std::shared_ptr<T>& v)
@@ -66,8 +70,40 @@ struct Value
         }
          return *(T*)atom.get();
     }
+
+    friend std::ostream& operator<< (std::ostream& os, const Value& val) {
+        if (val.is_atom()) {
+            if (val.type == std::type_index(typeid(double))) {
+                os << val.get<double>();
+            }
+            else if (val.type == std::type_index(typeid(std::string))) {
+                os << '"' << val.get<std::string>() << '"';
+            }
+            else {
+                os << '<' << val.type.name() << '>';
+            }
+        }
+        else {
+            // os << val.list;
+            os << '(';
+            for (const auto& x : val.list) {
+                os << x << ' ';
+            }
+            os << ')';
+        }
+        return os;
+    }
 };
 
+std::ostream& operator<< (std::ostream& os, const List& list)
+{
+    os << '(';
+    for (const auto& x : list) {
+        os << x << ' ';
+    }
+    os << ')';
+    return os;
+}
 
 template<typename T>
 std::vector<std::shared_ptr<T>> get(const List& in)
@@ -127,6 +163,64 @@ std::shared_ptr<T> get_first(const List& in)
     return std::shared_ptr<T>(nullptr);
 }
 
+bool is_func(const std::string& name, const List& in)
+{
+    return in.front().is<std::string>() && (in.front().get<std::string>() == name);
+}
+
+List tail (const List& in)
+{
+    return List(++in.begin(), in.end());
+}
+
+class Evaluator
+{
+public:
+    Evaluator () {}
+
+    void evaluate (Value& val)
+    {
+        if (val.is_list()) {
+            List& l = val.list;
+            if (l.size() == 0) return;
+            for (Value& v : l) {
+                evaluate(v);
+            }
+
+            if (l.front().is<std::string>()) {
+                const std::string& name = l.front().get<std::string>();
+                List args = tail(l);
+
+                if (name == "add") {
+                    double sum = 0;
+                    for (auto& x : get<double>(l)) sum += *x;
+                    l.clear();
+                    val.set(std::make_shared<double>(sum));
+                }
+            }
+
+
+        //     auto& list = val.list;
+        //     if (is_func("material", list)) {
+        //         auto name = get_one<std::string>(list);
+        //         if (name == "diffuse") {
+                    
+        //         }
+        //     }
+
+        //     if (is_func("rotate", list)) {
+        //         auto xx = get<double, 4>(list);
+        //         double angle = *xx[0];
+        //         double x = *xx[1];
+        //         double y = *xx[2];
+        //         double z = *xx[3];
+        //     }
+        }
+
+    }
+};
+
+
 
 int main ()
 {
@@ -150,9 +244,28 @@ int main ()
     std::cout << "INT?:\n";
     std::cout << (nullptr != get_first<int>(l)) << std::endl;
 
+
+    {
+        List l;
+        l.push_back(Value(new std::string("add")));
+        l.push_back(Value(new double(1.2)));
+        l.push_back(Value(new double(0.8)));
+        l.push_back(Value(new double(1.0)));
+        Value v(l);
+        List l2;
+        l2.push_back(Value(new std::string("x")));
+        l2.push_back(v);
+        Value v2(l2);
+        auto e = Evaluator();
+        std::cout << v2 << std::endl;
+        e.evaluate(v2);
+        std::cout << v2 << std::endl;
+    }
+
     // std::cout << v.get<double>() << std::endl;
     // std::cout << v.get<float>() << std::endl;
 }
+
 
 
 
