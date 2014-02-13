@@ -246,6 +246,37 @@ Value evaluate_prim (Value& val, List& args)
     return Value({"_prim", dynamic_cast<Primitive*>(p)});
 }
 
+bool evaluate_immediates (Value& val, const std::string& name, List& args)
+{
+    if (name == "rgb") {
+        float r = *pop<double>(args);
+        if (args.empty()) {
+            val.set(std::make_shared<Spectrum>(r));
+        }
+        else {
+            float g = *pop<double>(args);
+            float b = *pop<double>(args);
+            val.set(std::make_shared<Spectrum>(r,g,b));
+        }
+        return true;
+    }
+    
+    else if (name == "vec3") {
+        float r = *pop<double>(args);
+        if (args.empty()) {
+            val.set(std::make_shared<glm::vec3>(r));
+        }
+        else {
+            float g = *pop<double>(args);
+            float b = *pop<double>(args);
+            val.set(std::make_shared<glm::vec3>(r,g,b));
+        }
+        return true;
+    }
+    
+    return false;
+}
+
 
 
 
@@ -254,13 +285,18 @@ Scene* lmain ()
 {
     Value* w = new Value({
         {"x", {"+", 1.2, 0.8, 1.0}},
-        {"material", "diffuse", {"R", new Spectrum(1.2, 0.8, 1.0)}},
+        {"material", "diffuse", {"R", {"rgb", 1.2, 0.8, 1.0}}},
         {"prim",
             {"shape", "sphere"},
             {"material", "diffuse", {"R", new Spectrum(1.0f)}},
-            {"xform", {"translate", new glm::vec3(0,0,-1)}},
-            {"emit", new Spectrum(1.0f)},
-        }
+            {"xform", {"translate", {"vec3", 0.0, -0.0, -1.0}}},
+            {"emit", {"rgb", 1.0, 0.15, 0.15}},
+        },
+        {"prim",
+            {"shape", "plane"},
+            {"material", "diffuse", {"R", {"rgb", 1.0}}},
+            {"xform", {"translate", new glm::vec3(0,-1,0)}},
+        },
     });
 
     auto e = Evaluator();

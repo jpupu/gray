@@ -313,6 +313,7 @@ Value evaluate_material (Value& val, List& args);
 Value evaluate_shape (Value& val, List& args);
 Value evaluate_xform (Value& val, List& args);
 Value evaluate_prim (Value& val, List& args);
+bool evaluate_immediates (Value& val, const std::string& name, List& args);
 
 class Evaluator
 {
@@ -354,7 +355,11 @@ public:
                 else if (name == "prim") {
                     val.reset( evaluate_prim(val, args) );
                 }
-                
+
+                else if (evaluate_v(val, name, args)) {
+                    ;
+                }
+
                 // assert_empty(args);
             }
         }
