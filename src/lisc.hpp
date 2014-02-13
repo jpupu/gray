@@ -356,7 +356,7 @@ public:
                     val.reset( evaluate_prim(val, args) );
                 }
 
-                else if (evaluate_v(val, name, args)) {
+                else if (evaluate_immediates(val, name, args)) {
                     ;
                 }
 
