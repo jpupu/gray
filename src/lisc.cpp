@@ -10,261 +10,86 @@ extern "C" {
 #include <cstdlib>
 #include <algorithm>
 #include <stdexcept>
-// #include "lisc.hpp"
+#include "lisc.hpp"
 
 using std::string;
 
-#include <memory>
-#include <list>
-#include <typeindex>
 
-struct Value;
-typedef std::list<Value> List;
+// class Evaluator
+// {
+// public:
+//     Evaluator () {}
 
+//     void evaluate (Value& val)
+//     {
+//         if (val.is_list()) {
+//             List& l = val.list;
+//             if (l.size() == 0) return;
+//             for (Value& v : l) {
+//                 evaluate(v);
+//             }
 
+//             if (l.front().is<std::string>()) {
+//                 const std::string& name = l.front().get<std::string>();
+//                 List args = tail(l);
 
-struct Value
-{
-    Value ()
-        : type(std::type_index(typeid(void)))
-    {}
+//                 if (name == "add") {
+//                     double sum = 0;
+//                     while (!args.empty()) { sum += *pop<double>(args); }
+//                     val.set(std::make_shared<double>(sum));
+//                     // assert_empty(args);
+//                 }
+//             }
+//         }
 
-    template<typename T>
-    Value (T* v)
-        : type(std::type_index(typeid(T))),
-          atom(v)
-    {}
-    
-    template<typename T>
-    Value (const std::shared_ptr<T>& v)
-        : type(std::type_index(typeid(T))),
-          atom(v)
-    {}
-    
-    Value (List& v)
-        : type(std::type_index(typeid(void))),
-          list(v)
-    {}
-
-    std::type_index type;
-    std::shared_ptr<void> atom;
-    List list;
-
-    bool is_atom () const { return atom != nullptr; }
-    bool is_list () const { return !is_atom(); }
-    template<typename T>
-    bool is () const { return type == std::type_index(typeid(T)); }
-
-    template<typename T>
-    void set (const std::shared_ptr<T>& v)
-    {
-        type = std::type_index(typeid(T));
-        atom = v;
-    }
-
-    template<typename T>
-    T& get () const
-    {
-        if (type != std::type_index(typeid(T))) {
-            throw std::logic_error("Value::get:Invalid type");
-        }
-         return *(T*)atom.get();
-    }
-
-    friend std::ostream& operator<< (std::ostream& os, const Value& val) {
-        if (val.is_atom()) {
-            if (val.type == std::type_index(typeid(double))) {
-                os << val.get<double>();
-            }
-            else if (val.type == std::type_index(typeid(std::string))) {
-                os << '"' << val.get<std::string>() << '"';
-            }
-            else {
-                os << '<' << val.type.name() << '>';
-            }
-        }
-        else {
-            // os << val.list;
-            os << '(';
-            for (const auto& x : val.list) {
-                os << x << ' ';
-            }
-            os << ')';
-        }
-        return os;
-    }
-};
-
-std::ostream& operator<< (std::ostream& os, const List& list)
-{
-    os << '(';
-    for (const auto& x : list) {
-        os << x << ' ';
-    }
-    os << ')';
-    return os;
-}
-
-template<typename T>
-std::vector<std::shared_ptr<T>> get(const List& in)
-{
-    std::vector<std::shared_ptr<T>> out;
-    for (auto& x : in) {
-        if (x.type == std::type_index(typeid(T))) {
-            out.push_back(std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom)));
-        }
-    }
-    return out;
-}
-
-template<typename T, unsigned int N>
-std::vector<std::shared_ptr<T>> get(const List& in)
-{
-    std::vector<std::shared_ptr<T>> out;
-    for (auto& x : in) {
-        if (x.type == std::type_index(typeid(T))) {
-            out.push_back(std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom)));
-        }
-    }
-    if (out.size() != N) {
-        throw std::runtime_error("get: Bad number of items.");
-    }
-    return out;
-}
-
-template<typename T>
-std::shared_ptr<T> get_one(const List& in)
-{
-    std::shared_ptr<T> out;
-    for (auto& x : in) {
-        if (x.type == std::type_index(typeid(T))) {
-            if (out.get() == nullptr) {
-                out = std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom));
-            }
-            else {
-                throw std::runtime_error("get_one: Multiple found");
-            }
-        }
-    }
-    if (out.get() == nullptr) {
-        throw std::runtime_error("get_one: Item not found");
-    }
-    return out;
-}
-
-template<typename T>
-std::shared_ptr<T> get_first(const List& in)
-{
-    for (auto& x : in) {
-        if (x.type == std::type_index(typeid(T))) {
-            return std::shared_ptr<T>(std::static_pointer_cast<T>(x.atom));
-        }
-    }
-    return std::shared_ptr<T>(nullptr);
-}
-
-bool is_func(const std::string& name, const List& in)
-{
-    return in.front().is<std::string>() && (in.front().get<std::string>() == name);
-}
-
-List tail (const List& in)
-{
-    return List(++in.begin(), in.end());
-}
-
-class Evaluator
-{
-public:
-    Evaluator () {}
-
-    void evaluate (Value& val)
-    {
-        if (val.is_list()) {
-            List& l = val.list;
-            if (l.size() == 0) return;
-            for (Value& v : l) {
-                evaluate(v);
-            }
-
-            if (l.front().is<std::string>()) {
-                const std::string& name = l.front().get<std::string>();
-                List args = tail(l);
-
-                if (name == "add") {
-                    double sum = 0;
-                    for (auto& x : get<double>(l)) sum += *x;
-                    l.clear();
-                    val.set(std::make_shared<double>(sum));
-                }
-            }
-
-
-        //     auto& list = val.list;
-        //     if (is_func("material", list)) {
-        //         auto name = get_one<std::string>(list);
-        //         if (name == "diffuse") {
-                    
-        //         }
-        //     }
-
-        //     if (is_func("rotate", list)) {
-        //         auto xx = get<double, 4>(list);
-        //         double angle = *xx[0];
-        //         double x = *xx[1];
-        //         double y = *xx[2];
-        //         double z = *xx[3];
-        //     }
-        }
-
-    }
-};
+//     }
+// };
 
 
 
-int main ()
-{
-    List l;
-    l.push_back(Value(new double(0.8)));
-    l.push_back(Value(std::make_shared<std::string>("Hello")));
-    l.push_back(Value(new double(1.6)));
-    l.push_back(Value(new std::string("World")));
-    l.push_back(Value(new float(64.0f)));
+// int main ()
+// {
+//     List l;
+//     l.push_back(Value(new double(0.8)));
+//     l.push_back(Value(std::make_shared<std::string>("Hello")));
+//     l.push_back(Value(new double(1.6)));
+//     l.push_back(Value(new std::string("World")));
+//     l.push_back(Value(new float(64.0f)));
 
-    std::cout << "DOUBLE:\n";
-    for (auto& x : get<double,2>(l)) {
-        std::cout << *x << std::endl;
-    }
-    std::cout << "STRING:\n";
-    for (auto& x : get<std::string>(l)) {
-        std::cout << *x << std::endl;
-    }
-    std::cout << "FLOAT:\n";
-    std::cout << *get_one<float>(l) << std::endl;
-    std::cout << "INT?:\n";
-    std::cout << (nullptr != get_first<int>(l)) << std::endl;
+//     std::cout << "DOUBLE:\n";
+//     for (auto& x : get<double,2>(l)) {
+//         std::cout << *x << std::endl;
+//     }
+//     std::cout << "STRING:\n";
+//     for (auto& x : get<std::string>(l)) {
+//         std::cout << *x << std::endl;
+//     }
+//     std::cout << "FLOAT:\n";
+//     std::cout << *get_one<float>(l) << std::endl;
+//     std::cout << "INT?:\n";
+//     std::cout << (nullptr != get_first<int>(l)) << std::endl;
 
 
-    {
-        List l;
-        l.push_back(Value(new std::string("add")));
-        l.push_back(Value(new double(1.2)));
-        l.push_back(Value(new double(0.8)));
-        l.push_back(Value(new double(1.0)));
-        Value v(l);
-        List l2;
-        l2.push_back(Value(new std::string("x")));
-        l2.push_back(v);
-        Value v2(l2);
-        auto e = Evaluator();
-        std::cout << v2 << std::endl;
-        e.evaluate(v2);
-        std::cout << v2 << std::endl;
-    }
+//     {
+//         List l;
+//         l.push_back(Value(new std::string("add")));
+//         l.push_back(Value(new double(1.2)));
+//         l.push_back(Value(new double(0.8)));
+//         l.push_back(Value(new double(1.0)));
+//         Value v(l);
+//         List l2;
+//         l2.push_back(Value(new std::string("x")));
+//         l2.push_back(v);
+//         Value v2(l2);
+//         auto e = Evaluator();
+//         std::cout << v2 << std::endl;
+//         e.evaluate(v2);
+//         std::cout << v2 << std::endl;
+//     }
 
-    // std::cout << v.get<double>() << std::endl;
-    // std::cout << v.get<float>() << std::endl;
-}
+//     // std::cout << v.get<double>() << std::endl;
+//     // std::cout << v.get<float>() << std::endl;
+// }
 
 
 

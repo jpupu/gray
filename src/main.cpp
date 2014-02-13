@@ -16,24 +16,25 @@ public:
 };
 
 
-#include "lisc_gray.hpp"
+// #include "lisc_gray.hpp"
+#include "lisc.hpp"
 
 Scene* load (const char* filename)
 {
     Scene* scn = new Scene();
-    Evaluator ev;
-    LiscLinAlg* la = new LiscLinAlg(&ev);
-    LiscGray* lg = LiscGray::create(&ev, la);
-    ev.evaluate_file(filename);
+    // Evaluator ev;
+    // LiscLinAlg* la = new LiscLinAlg(&ev);
+    // LiscGray* lg = LiscGray::create(&ev, la);
+    // ev.evaluate_file(filename);
 
-    auto* list = new ListAggregate();
-    for (auto p : lg->primitives) {
-        list->add(p);
-    }
-    scn->primitives = list;
+    // auto* list = new ListAggregate();
+    // for (auto p : lg->primitives) {
+    //     list->add(p);
+    // }
+    // scn->primitives = list;
 
-    delete lg;
-    delete la;
+    // delete lg;
+    // delete la;
     
     return scn;
 }
@@ -194,13 +195,104 @@ public:
 
 };
 
+
+
+
+
+Value evaluate_shape (Value& val, List& args);
+
+
+Value evaluate_xform (Value& val, List& args)
+{
+    Transform T;
+    std::cout << "evalxform " << args << std::endl;
+
+    for (auto factor : args) {
+        std::cout << "evalxform factor " << factor << std::endl;
+        if (!factor.is_list()) throw std::runtime_error("evaluate_xform: item not a list");
+
+        auto aa = factor.list;
+        auto name = *pop<std::string>(aa);
+        if (name == "translate") {
+            auto v = *pop<glm::vec3>(aa);
+            T = T * Transform::translate(v);
+        }
+        else if (name == "scale") {
+            auto v = *pop<double>(aa);
+            T = T * Transform::scale(glm::vec3(v));
+        }
+        else if (name == "rotate") {
+            auto angle = *pop<double>(aa);
+            auto axis = *pop<glm::vec3>(aa);
+            T = T * Transform::rotate(angle, axis);
+        }
+        else {
+            throw std::runtime_error("invalid transform name");
+        }
+    }
+
+    return Value({"_xform", new Transform(T)});
+}
+
+
+Value evaluate_prim (Value& val, List& args)
+{
+    auto* p = new GeometricPrimitive();
+    p->mat = pop_attr<Material>("_material", args).get();
+    p->shape = pop_attr<Shape>("_shape", args).get();
+    p->world_from_prim = *pop_attr<Transform>("_xform", args);
+    p->Le = *pop_attr<Spectrum>("emit", std::shared_ptr<Spectrum>(new Spectrum(0)), args);
+
+    return Value({"_prim", dynamic_cast<Primitive*>(p)});
+}
+
+
+
+
+
+Scene* lmain ()
+{
+    Value* w = new Value({
+        {"x", {"+", 1.2, 0.8, 1.0}},
+        {"material", "diffuse", {"R", new Spectrum(1.2, 0.8, 1.0)}},
+        {"prim",
+            {"shape", "sphere"},
+            {"material", "diffuse", {"R", new Spectrum(1.0f)}},
+            {"xform", {"translate", new glm::vec3(0,0,-1)}},
+            {"emit", new Spectrum(1.0f)},
+        }
+    });
+
+    auto e = Evaluator();
+    std::cout << *w << std::endl;
+    e.evaluate(*w);
+    std::cout << *w << std::endl;
+
+    std::shared_ptr<Material> m = nullptr;
+    while ( (m = pop_attr<Material>("_material", nullptr, w->list)) ) {
+        std::cout << "got " << m << std::endl;
+    }
+
+    Scene* scene = new Scene();
+    ListAggregate* agg = new ListAggregate();
+    std::shared_ptr<Primitive> p = nullptr;
+    while ( (p = pop_attr<Primitive>("_prim", nullptr, w->list)) ) {
+        std::cout << "got prim " << p << std::endl;
+        auto* pp = new std::shared_ptr<Primitive>(p);
+        std::cout << "    pp " << pp << std::endl;
+        agg->add(p.get());
+    }
+    scene->primitives = agg;
+    return scene;
+}
+
 int main (int argc, char* argv[])
 {
     int resx = 256;
     int resy = 256;
     int spp = 100;
     unsigned int thread_count = 3;
-    const char* input_filename = "test1.scene";
+    // const char* input_filename = "test1.scene";
     const char* output_filename = "out";
 
     for (int i = 1; i < argc; ++i)
@@ -219,7 +311,7 @@ int main (int argc, char* argv[])
             thread_count = atol(argv[++i]);
         }
         else {
-            input_filename = argv[i];
+            // input_filename = argv[i];
         }
     }
 
@@ -227,7 +319,7 @@ int main (int argc, char* argv[])
 
     Scene* scene = nullptr;
     try {
-        scene = load(input_filename);
+        scene = lmain();//load(input_filename);
 
         printf("Resolution: %d x %d\n", resx, resy);
         printf("Samples per pixel: %d\n", spp);
