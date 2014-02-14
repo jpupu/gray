@@ -11,6 +11,7 @@
 #include <list>
 #include <typeindex>
 #include <iostream>
+#include <sstream>
 
 struct Value;
 typedef std::list<Value> List;
@@ -84,8 +85,17 @@ struct Value
     template<typename T>
     T& get () const
     {
+        if (is_list()) {
+            std::stringstream ss;
+            ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
+            ss << "Is a list";
+            throw std::runtime_error(ss.str());
+        }
         if (type != std::type_index(typeid(T))) {
-            throw std::logic_error("Value::get:Invalid type: got "+std::string(type.name())+", expecting "+std::type_index(typeid(T)).name());
+            std::stringstream ss;
+            ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
+            ss << "Wrong type";
+            throw std::runtime_error(ss.str());
         }
          return *(T*)atom.get();
     }
@@ -93,8 +103,17 @@ struct Value
     template<typename T>
     std::shared_ptr<T> get_ptr () const
     {
+        if (is_list()) {
+            std::stringstream ss;
+            ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
+            ss << "Is a list";
+            throw std::runtime_error(ss.str());
+        }
         if (type != std::type_index(typeid(T))) {
-            throw std::logic_error("Value::get_ptr:Invalid type: got "+std::string(type.name())+", expecting "+std::type_index(typeid(T)).name());
+            std::stringstream ss;
+            ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
+            ss << "Wrong type";
+            throw std::runtime_error(ss.str());
         }
          return std::shared_ptr<T>(std::static_pointer_cast<T>(atom));
     }
@@ -272,7 +291,6 @@ List pop_func (const char* name, List& in)
     std::cerr << "pop_func: in : " << in << std::endl;
     throw std::runtime_error("pop_func: none found");
 }
-
 template<typename T>
 inline
 std::shared_ptr<T> pop_attr (const char* name, List& in)
@@ -281,16 +299,19 @@ std::shared_ptr<T> pop_attr (const char* name, List& in)
         if (it->is_list() && is_func(name, it->list)) {
             List vallist = tail(it->list);
             if (vallist.size() != 1) {
-                std::cerr << "pop_attr: in : " << in << std::endl;
-                std::cerr << "pop_attr: vallist : " << vallist << std::endl;
-                throw std::runtime_error("pop_attr: bad list length");
+                std::stringstream ss;
+                ss << "While searching for attribute '" << name << "' in list " << in << ": ";
+                ss << "Value list " << vallist << " length != 1";
+                throw std::runtime_error(ss.str());
             }
             in.erase(it);
             return pop<T>(vallist);
         }
     }
-    std::cerr << "pop_attr: in : " << in << std::endl;
-    throw std::runtime_error("pop_attr: none found");
+    std::stringstream ss;
+    ss << "While searching for attribute '" << name << "' in list " << in << ": ";
+    ss << "Not found";
+    throw std::runtime_error(ss.str());
 }
 
 template<typename T>

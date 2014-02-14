@@ -253,8 +253,6 @@ List get_list (Scanner& scanner)
 
 Value parse ()
 {
-    // const string source = "((prim (shape sphere) (material (diffuse (R (rgb 1 1 1)))) ))";
-    // const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) ))";
     const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) (xform (translate (vec3 0 0 -1))) (emit (rgb 1 0 0)) ))";
 
     Scanner scan(source);
