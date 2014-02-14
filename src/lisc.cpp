@@ -100,7 +100,6 @@ using std::string;
 
 
 
-#if 0
 
 
 
@@ -203,22 +202,22 @@ public:
 
 
 
-void print_list (const List& l, bool newline=true);
+// void print_list (const List& l, bool newline=true);
 
-void print_list_item (const Datum& i)
-{
-	if (i.is_name()) std::cout << i.name << " ";
-	else if (i.is_number()) std::cout << i.number << " ";
-	else print_list(i.list, false);
-}
+// void print_list_item (const Datum& i)
+// {
+// 	if (i.is_name()) std::cout << i.name << " ";
+// 	else if (i.is_number()) std::cout << i.number << " ";
+// 	else print_list(i.list, false);
+// }
 
-void print_list (const List& l, bool newline)
-{
-	std::cout << "(";
-	for (const Datum& i : l) print_list_item(i);
-	std::cout << ") ";
-	if (newline) std::cout << std::endl;
-}
+// void print_list (const List& l, bool newline)
+// {
+// 	std::cout << "(";
+// 	for (const Datum& i : l) print_list_item(i);
+// 	std::cout << ") ";
+// 	if (newline) std::cout << std::endl;
+// }
 
 List get_list (Scanner& scanner)
 {
@@ -232,14 +231,14 @@ List get_list (Scanner& scanner)
 	while ((tok = scanner.next()).type != "rparen") {
 		if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
 		else if (tok.type == "number") {
-			res.push_back(Datum(tok.v_number));
+			res.push_back(tok.v_number);
 		}
 		else if (tok.type == "name") {
-			res.push_back(Datum(tok.v_name));
+			res.push_back(Value(tok.v_name));
 		}
 		else if (tok.type == "lparen") {
 			scanner.back();
-			res.push_back(Datum(get_list(scanner)));
+			res.push_back(get_list(scanner));
 		}
 		else if (tok.type == "illegal") {
 			throw std::runtime_error("illegal token "+tok.v_name);
@@ -250,6 +249,24 @@ List get_list (Scanner& scanner)
 	return res;
 }
 
+
+
+Value parse ()
+{
+    // const string source = "((prim (shape sphere) (material (diffuse (R (rgb 1 1 1)))) ))";
+    // const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) ))";
+    const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) (xform (translate (vec3 0 0 -1))) (emit (rgb 1 0 0)) ))";
+
+    Scanner scan(source);
+
+    return Value(get_list(scan));
+}
+
+
+
+
+
+#if 0
 
 
 Datum Evaluator::evaluate (const Datum& form)

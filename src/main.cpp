@@ -196,7 +196,7 @@ public:
 
 
 
-
+Value parse ();
 
 Scene* lmain ()
 {
@@ -215,6 +215,7 @@ Scene* lmain ()
             {"xform", {"translate", new glm::vec3(0,-1,0)}},
         },
     });
+    w = parse();
     return evaluate_scene(w);
 }
 

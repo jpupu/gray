@@ -33,6 +33,11 @@ struct Value
           atom(new double(v))
     {}
 
+    Value (const std::string& v)
+        : type(std::type_index(typeid(std::string))),
+          atom(new std::string(v))
+    {}
+
     template<typename T>
     Value (T* v)
         : type(std::type_index(typeid(T))),
