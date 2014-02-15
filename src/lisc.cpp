@@ -14,6 +14,8 @@ extern "C" {
 
 using std::string;
 
+LiscLogger logger;
+
 
 // class Evaluator
 // {
@@ -127,8 +129,8 @@ public:
 	struct Token
 	{
 		Token () {}
-		Token (const std::string& t, const std::string& v)
-			: type(t)
+		Token (const std::string& t, const std::string& v, int lineno=0)
+			: type(t), lineno(lineno)
 		{
 			v_name = v;
 			v_number = atof(v.c_str());
@@ -136,6 +138,7 @@ public:
 		std::string type;
 		float		v_number;
 		std::string	v_name;
+        int lineno;
 	};
 
 
@@ -145,12 +148,17 @@ private:
 	std::vector<Rule> rules;
 	Token current;
 	bool backed;
+    int lineno;
+public:
+    std::string filename;
 
 public:
-	Scanner (const std::string& source)
+	Scanner (const std::string& source, const std::string& filename="<input>")
 		: source(source),
 		p(this->source.c_str()),
-		backed(false)
+		backed(false),
+        lineno(1),
+        filename(filename)
 	{
 		rules = {
 			Rule("lparen", "\\("),
@@ -169,20 +177,23 @@ public:
 			return current;
 		}
 
-		while (*p == ' ' || *p == '\n' || *p == '\t' || *p == '\r') ++p;
+		while (*p == ' ' || *p == '\n' || *p == '\t' || *p == '\r') {
+            if (*p == '\n') lineno++;
+            ++p;
+        }
 
 		const char* o0;
 		const char* o1;
 		for (const Rule& r : rules) {
 			if (trex_search(r.re.get(), p, &o0, &o1)) {
 				p = o1;
-				current = Token(r.type, std::string(o0, o1));
+				current = Token(r.type, std::string(o0, o1), lineno);
 				// std::cout << "SCAN " << std::string(o0, o1) << std::endl;
 				return current;
 			}
 		}
 
-		current =  Token("eot", "");
+		current =  Token("eot", "", lineno);
 		return current;
 	}
 
@@ -232,13 +243,19 @@ List get_list (Scanner& scanner)
 		if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
 		else if (tok.type == "number") {
 			res.push_back(tok.v_number);
-		}
-		else if (tok.type == "name") {
-			res.push_back(Value(tok.v_name));
-		}
-		else if (tok.type == "lparen") {
-			scanner.back();
-			res.push_back(get_list(scanner));
+            res.back().lineno = tok.lineno;
+            res.back().filename = scanner.filename;
+        }
+        else if (tok.type == "name") {
+            res.push_back(tok.v_name);
+            res.back().lineno = tok.lineno;
+            res.back().filename = scanner.filename;
+        }
+        else if (tok.type == "lparen") {
+            scanner.back();
+            res.push_back(get_list(scanner));
+            res.back().lineno = tok.lineno;
+            res.back().filename = scanner.filename;
 		}
 		else if (tok.type == "illegal") {
 			throw std::runtime_error("illegal token "+tok.v_name);
@@ -253,7 +270,8 @@ List get_list (Scanner& scanner)
 
 Value parse ()
 {
-    const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) (xform (translate (vec3 0 0 -1))) (emit (rgb 1 0 0)) ))";
+    // const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) (xform (translate (vec3 0 0 -1))) (emit (rgb 1 0 0)) ))";
+    const string source = "((prim\n(shape sphere)\n(material diffuse (R (rgb 1 1 1)))\n(xformd (translate (vec3 0 0 -1)))\n(emit (rgb 1 0 0))\n))";
 
     Scanner scan(source);
 

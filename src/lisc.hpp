@@ -13,10 +13,53 @@
 #include <iostream>
 #include <sstream>
 
+class LiscLogger {
+public:
+    LiscLogger ()
+        : filename("<input>"), lineno(1)
+    { }
+
+    std::string filename;
+    int lineno;
+    std::stringstream ss;
+
+    void set (const std::string& filename, int lineno)
+    {
+        this->filename = filename;
+        this->lineno = lineno;
+    }
+    void set (int lineno)
+    {
+        this->lineno = lineno;
+    }
+
+    std::ostream& format ()
+    {
+        ss.str("");
+        ss << filename << "::" << lineno << ": ";
+        return ss;
+    }
+
+    std::string get() const
+    {
+        return ss.str();
+    }
+};
+
+extern LiscLogger logger;
+
+template<typename T>
+inline
+std::ostream& operator<< (const LiscLogger& l, const T& val)
+{
+    std::cout << l.filename << "::" << l.lineno << ": ";
+    return std::cout;
+}
+
+
+
 struct Value;
 typedef std::list<Value> List;
-
-
 
 struct Value
 {
@@ -68,6 +111,8 @@ struct Value
     std::type_index type;
     std::shared_ptr<void> atom;
     List list;
+    int lineno;
+    std::string filename;
 
     bool is_atom () const { return atom != nullptr; }
     bool is_list () const { return !is_atom(); }
@@ -87,12 +132,14 @@ struct Value
     {
         if (is_list()) {
             std::stringstream ss;
+            ss << filename << ":" << lineno << "::";
             ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
             ss << "Is a list";
             throw std::runtime_error(ss.str());
         }
         if (type != std::type_index(typeid(T))) {
             std::stringstream ss;
+            ss << filename << ":" << lineno << "::";
             ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
             ss << "Wrong type";
             throw std::runtime_error(ss.str());
@@ -105,12 +152,14 @@ struct Value
     {
         if (is_list()) {
             std::stringstream ss;
+            ss << filename << ":" << lineno << "::";
             ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
             ss << "Is a list";
             throw std::runtime_error(ss.str());
         }
         if (type != std::type_index(typeid(T))) {
             std::stringstream ss;
+            ss << filename << ":" << lineno << "::";
             ss << "While getting " << typeid(T).name() << " from " << *this << ": ";
             ss << "Wrong type";
             throw std::runtime_error(ss.str());
@@ -291,6 +340,7 @@ List pop_func (const char* name, List& in)
     std::cerr << "pop_func: in : " << in << std::endl;
     throw std::runtime_error("pop_func: none found");
 }
+
 template<typename T>
 inline
 std::shared_ptr<T> pop_attr (const char* name, List& in)
@@ -299,19 +349,18 @@ std::shared_ptr<T> pop_attr (const char* name, List& in)
         if (it->is_list() && is_func(name, it->list)) {
             List vallist = tail(it->list);
             if (vallist.size() != 1) {
-                std::stringstream ss;
-                ss << "While searching for attribute '" << name << "' in list " << in << ": ";
-                ss << "Value list " << vallist << " length != 1";
-                throw std::runtime_error(ss.str());
+                logger.format()
+                    << "While searching for attribute '" << name << "' in list " << in << ": ";
+                    << "Value list " << vallist << " length != 1";
+                throw std::runtime_error(logger.get());
             }
             in.erase(it);
             return pop<T>(vallist);
         }
     }
-    std::stringstream ss;
-    ss << "While searching for attribute '" << name << "' in list " << in << ": ";
-    ss << "Not found";
-    throw std::runtime_error(ss.str());
+    logger.format() << "While searching for attribute '" << name << "' in list " << in << ": "
+            << "Not found";
+    throw std::runtime_error(logger.get());
 }
 
 template<typename T>
@@ -349,6 +398,7 @@ public:
     void evaluate (Value& val)
     {
     	std::cout << "evaluate:: " << val << std::endl;
+        logger.set(val.filename, val.lineno);
         if (val.is_list()) {
             List& l = val.list;
             if (l.size() == 0) return;
