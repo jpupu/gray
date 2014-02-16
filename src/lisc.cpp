@@ -158,14 +158,18 @@ List get_list (Scanner& scanner)
 
 
 
-Value parse ()
+Value parse (const char* filename)
 {
-    // const string source = "((prim (shape sphere) (material diffuse (R (rgb 1 1 1))) (xform (translate (vec3 0 0 -1))) (emit (rgb 1 0 0)) ))";
-    const std::string source = "((prim\n(shape sphere)\n(material diffuse (R (rgb 1 1 1)))\n(xformd (translate (vec3 0 0 -1)))\n(emit (rgb 1 0 0))\n))";
+    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    if (in) {
+        std::ostringstream contents;
+        contents << in.rdbuf();
+        in.close();
 
-    Scanner scan(source);
-
-    return Value(get_list(scan));
+        Scanner scan(contents.str());
+        return Value(get_list(scan));
+    }
+    throw std::runtime_error("error reading file");
 }
 
 

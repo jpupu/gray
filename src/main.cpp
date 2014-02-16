@@ -196,9 +196,9 @@ public:
 
 
 
-Value parse ();
+Value parse (const char* filename);
 
-Scene* lmain ()
+Scene* lmain (const char* filename)
 {
     Value w({
         {"x", {"+", 1.2, 0.8, 1.0}},
@@ -215,7 +215,7 @@ Scene* lmain ()
             {"xform", {"translate", new glm::vec3(0,-1,0)}},
         },
     });
-    w = parse();
+    w = parse(filename);
     return evaluate_scene(w);
 }
 
@@ -225,7 +225,7 @@ int main (int argc, char* argv[])
     int resy = 256;
     int spp = 100;
     unsigned int thread_count = 3;
-    // const char* input_filename = "test1.scene";
+    const char* input_filename = "test1.lisc";
     const char* output_filename = "out";
 
     for (int i = 1; i < argc; ++i)
@@ -244,7 +244,7 @@ int main (int argc, char* argv[])
             thread_count = atol(argv[++i]);
         }
         else {
-            // input_filename = argv[i];
+            input_filename = argv[i];
         }
     }
 
@@ -252,7 +252,7 @@ int main (int argc, char* argv[])
 
     Scene* scene = nullptr;
     try {
-        scene = lmain();//load(input_filename);
+        scene = lmain(input_filename);
 
         printf("Resolution: %d x %d\n", resx, resy);
         printf("Samples per pixel: %d\n", spp);
