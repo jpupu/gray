@@ -1,12 +1,8 @@
 #ifndef MATERIALS_H__
 #define MATERIALS_H__
 
-#include "gray.hpp"
+#include "lisc.hpp"
 
-Material* make_diffuse (const Spectrum& reflectance);
-Material* make_mirror (const Spectrum& reflectance);
-Material* make_glass (const Spectrum& transmittance);
+Value evaluate_material (Value& val, List& args);
 
-
- 
 #endif /* end of include guard: MATERIALS_H__ */

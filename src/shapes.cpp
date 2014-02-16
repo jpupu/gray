@@ -7,10 +7,6 @@ public:
     bool intersect (Ray& r, Isect* isect);
 };
 
-Shape* make_sphere ()
-{
-    return new Sphere();
-}
 
 bool Sphere::intersect (Ray& ray, Isect* isect)
 {
@@ -62,11 +58,6 @@ public:
     }
 };
 
-Shape* make_plane ()
-{
-    return new Plane();
-}
-
 
 class Rectangle : public Shape
 {
@@ -90,12 +81,8 @@ public:
     }
 };
 
-Shape* make_rectangle ()
-{
-    return new Rectangle();
-}
 
-
+static
 std::vector<std::shared_ptr<Shape>> shape_pool;
 
 Value evaluate_shape (Value& val, List& args)

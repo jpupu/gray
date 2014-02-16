@@ -1,6 +1,8 @@
 #include "materials.hpp"
 #include "util.hpp"
 #include "lisc.hpp"
+#include "gray.hpp"
+#include <memory>
 
 /** Calculate dielectric fresnel reflectance F_r. Note that each wavelength
  * in the spectrum may have its own index of refraction.
@@ -295,21 +297,7 @@ public:
 
 
 
-
-Material* make_diffuse (const Spectrum& reflectance)
-{
-	return new Diffuse(reflectance);
-}
-Material* make_mirror (const Spectrum& reflectance)
-{
-	return new Mirror(reflectance);
-}
-Material* make_glass (const Spectrum& transmittance)
-{
-    return new Glass(transmittance);
-}
-
-
+static
 std::vector<std::shared_ptr<Material>> material_pool;
 
 Value evaluate_material (Value& val, List& args)
