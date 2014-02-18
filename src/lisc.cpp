@@ -123,21 +123,28 @@ public:
 
 
 
-List get_list (Scanner& scanner, bool angle=false)
+List get_list (Scanner& scanner, bool angle=false, bool enclosed=true)
 {
     const std::string& opening = angle ? "langle" : "lparen";
-    const std::string& closing = angle ? "rangle" : "rparen";
+    const std::string& closing = (enclosed ? (angle ? "rangle" : "rparen") : "eot");
 
     Scanner::Token first = scanner.next();
-    if (first.type != opening) {
+    if (enclosed) {
+        if (first.type != opening) {
+            scanner.back();
+            throw std::runtime_error("get_list expects "+opening+", got " + scanner.next().type);
+        }
+    }
+    else {
         scanner.back();
-        throw std::runtime_error("get_list expects "+opening+", got " + scanner.next().type);
     }
 
     List res;
     Scanner::Token tok;
     while ((tok = scanner.next()).type != closing) {
-        if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
+        if (tok.type == "eot" && enclosed) {
+            throw std::runtime_error("unexpected end of file");
+        }
         else if (tok.type == "comment-eol" || tok.type == "comment-limited") {
             ;
         }
@@ -189,7 +196,7 @@ Value parse_file (const char* filename)
         in.close();
 
         Scanner scan(contents.str());
-        return Value(get_list(scan));
+        return Value(get_list(scan, true, false));
     }
     throw std::runtime_error("error reading file");
 }
