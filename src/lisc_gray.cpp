@@ -2,24 +2,14 @@
 // #include "shapes.hpp"
 // #include "materials.hpp"
 #include <iostream>
+#include "lisc_linalg.hpp"
 
-Scene* evaluate_scene (Value& description) {
-    auto e = Evaluator();
-    std::cout << description << std::endl;
-    e.evaluate(description);
-    std::cout << description << std::endl;
+void evaluate_shape (Value& val, List& args);
+void evaluate_material (Value& val, List& args);
 
-    Scene* scene = new Scene();
-    ListAggregate* agg = new ListAggregate();
-    std::shared_ptr<Primitive> p = nullptr;
-    while ( (p = pop_attr<Primitive>("_prim", nullptr, description.list)) ) {
-        agg->add(p.get());
-    }
-    scene->primitives = agg;
-    return scene;
-}
 
-Value evaluate_xform (Value& val, List& args)
+
+void evaluate_xform (Value& val, List& args)
 {
     Transform T;
     std::cout << "evalxform " << args << std::endl;
@@ -48,13 +38,13 @@ Value evaluate_xform (Value& val, List& args)
         }
     }
 
-    return Value({"_xform", new Transform(T)});
+    val.reset({"_xform", new Transform(T)});
 }
 
-
+static
 std::vector<std::shared_ptr<Primitive>> primitive_pool;
 
-Value evaluate_prim (Value& val, List& args)
+void evaluate_prim (Value& val, List& args)
 {
     auto* p = new GeometricPrimitive();
     p->mat = pop_attr<Material>("_material", args).get();
@@ -64,8 +54,9 @@ Value evaluate_prim (Value& val, List& args)
 
     std::shared_ptr<Primitive> sh(dynamic_cast<Primitive*>(p));
     primitive_pool.push_back(sh);
-    return Value({"_prim", sh});
+    val.reset({"_prim", sh});
 }
+
 
 bool evaluate_immediates (Value& val, const std::string& name, List& args)
 {
@@ -95,6 +86,29 @@ bool evaluate_immediates (Value& val, const std::string& name, List& args)
         return true;
     }
     
+    return false;
+}
+
+bool evaluate_gray (Value& val, const std::string& name, List& args)
+{
+    if (evaluate_immediates(val, name, args)) return true;
+    else if (name == "prim") {
+        evaluate_prim(val, args);
+        return true;    
+    }
+    else if (name == "xform") {
+        evaluate_xform(val, args);
+        return true;    
+    }
+    else if (name == "material") {
+        evaluate_material(val, args);
+        return true;    
+    }
+    else if (name == "shape") {
+        evaluate_shape(val, args);
+        return true;    
+    }
+
     return false;
 }
 

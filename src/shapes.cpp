@@ -85,7 +85,7 @@ public:
 static
 std::vector<std::shared_ptr<Shape>> shape_pool;
 
-Value evaluate_shape (Value& val, List& args)
+void evaluate_shape (Value& val, List& args)
 {
     Shape* S;
     auto name = *pop<std::string>(args);
@@ -104,5 +104,5 @@ Value evaluate_shape (Value& val, List& args)
 
     std::shared_ptr<Shape> sh(S);
     shape_pool.push_back(sh);
-    return Value({"_shape", sh});
+    val.reset({"_shape", sh});
 }

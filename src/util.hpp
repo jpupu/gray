@@ -3,6 +3,7 @@
 
 #include "mymath.hpp"
 #include "Transform.hpp"
+#include <algorithm>
 
 inline
 float frand ()

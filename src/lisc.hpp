@@ -390,8 +390,18 @@ public:
     Evaluator () {}
 
     void evaluate (Value& val);
+
+    typedef std::function<bool(Value&, const std::string&, List&)> EvalSet;
+
+    void add_set (EvalSet f)
+    {
+        funcs.push_back(f);
+    }
+
+private:
+    std::vector<EvalSet> funcs;
 };
 
-
+Value parse_file (const char* filename);
 
 #endif // _LISC_HPP_

@@ -1,4 +1,3 @@
-#include "materials.hpp"
 #include "util.hpp"
 #include "lisc.hpp"
 #include "gray.hpp"
@@ -300,7 +299,7 @@ public:
 static
 std::vector<std::shared_ptr<Material>> material_pool;
 
-Value evaluate_material (Value& val, List& args)
+void evaluate_material (Value& val, List& args)
 {
     Material* M;
     auto name = *pop<std::string>(args);
@@ -322,7 +321,7 @@ Value evaluate_material (Value& val, List& args)
 
     std::shared_ptr<Material> sh(M);
     material_pool.push_back(sh);
-    return Value({"_material", sh});
+    val.reset({"_material", sh});
 }
 
 

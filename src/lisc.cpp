@@ -119,7 +119,6 @@ public:
 
 
 
-
 List get_list (Scanner& scanner)
 {
     if (scanner.next().type != "lparen") {
@@ -158,7 +157,7 @@ List get_list (Scanner& scanner)
 
 
 
-Value parse (const char* filename)
+Value parse_file (const char* filename)
 {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     if (in) {
@@ -173,10 +172,6 @@ Value parse (const char* filename)
 }
 
 
-#include "materials.hpp"
-#include "shapes.hpp"
-#include "lisc_gray.hpp"
-#include "lisc_linalg.hpp"
 
 void Evaluator::evaluate (Value& val)
 {
@@ -199,28 +194,10 @@ void Evaluator::evaluate (Value& val)
                 val.set(std::make_shared<double>(sum));
             }
 
-            else if (name == "material") {
-                val.reset( evaluate_material(val, args) );
-            }
-            
-            else if (name == "shape") {
-                val.reset( evaluate_shape(val, args) );
-            }
-            
-            else if (name == "xform") {
-                val.reset( evaluate_xform(val, args) );
-            }
-            
-            else if (name == "prim") {
-                val.reset( evaluate_prim(val, args) );
-            }
-
-            else if (evaluate_immediates(val, name, args)) {
-                ;
-            }
-
-            else if (evaluate_linalg(val, name, args)) {
-                ;
+            else {
+                for (auto f : funcs) {
+                    if (f(val, name, args)) break;
+                }
             }
 
             // assert_empty(args);
