@@ -72,6 +72,8 @@ public:
         filename(filename)
     {
         rules = {
+            Rule("comment-eol", "--.*\\n"),
+            Rule("comment-limited", "{-.*-}"),
             Rule("lparen", "\\("),
             Rule("rparen", "\\)"),
             Rule("langle", "<"),
@@ -136,6 +138,9 @@ List get_list (Scanner& scanner, bool angle=false)
     Scanner::Token tok;
     while ((tok = scanner.next()).type != closing) {
         if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
+        else if (tok.type == "comment-eol" || tok.type == "comment-limited") {
+            ;
+        }
         else if (tok.type == "number") {
             res.push_back(tok.v_number);
             res.back().lineno = tok.lineno;

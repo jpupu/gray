@@ -1,5 +1,5 @@
 (
-(-- Light emitting sphere on a plane. )
+-- Light emitting sphere on a plane.
 (prim
     (shape sphere)
     (material diffuse (R (rgb 1)))
@@ -9,6 +9,6 @@
 (prim
     (shape plane)
     (material diffuse (R (rgb 1 .7 .4)))
-    (xform (translate <0 -1 0>))
+    (xform (translate {- a comment! -} <0 -1 0>))
     )
 )
