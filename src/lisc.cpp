@@ -74,6 +74,8 @@ public:
         rules = {
             Rule("lparen", "\\("),
             Rule("rparen", "\\)"),
+            Rule("langle", "<"),
+            Rule("rangle", ">"),
             Rule("number", "-?(\\d*\\.)?\\d+"),
             Rule("name", "[\\w+*-/=?.]+"),
             Rule("illegal", "[^ \\n\\t\\r]+")
@@ -119,16 +121,20 @@ public:
 
 
 
-List get_list (Scanner& scanner)
+List get_list (Scanner& scanner, bool angle=false)
 {
-    if (scanner.next().type != "lparen") {
+    const std::string& opening = angle ? "langle" : "lparen";
+    const std::string& closing = angle ? "rangle" : "rparen";
+
+    Scanner::Token first = scanner.next();
+    if (first.type != opening) {
         scanner.back();
-        throw std::runtime_error("get_list expects lparen, got " + scanner.next().type);
+        throw std::runtime_error("get_list expects "+opening+", got " + scanner.next().type);
     }
 
     List res;
     Scanner::Token tok;
-    while ((tok = scanner.next()).type != "rparen") {
+    while ((tok = scanner.next()).type != closing) {
         if (tok.type == "eot") throw std::runtime_error("unexpected end of file");
         else if (tok.type == "number") {
             res.push_back(tok.v_number);
@@ -142,7 +148,13 @@ List get_list (Scanner& scanner)
         }
         else if (tok.type == "lparen") {
             scanner.back();
-            res.push_back(get_list(scanner));
+            res.push_back(get_list(scanner, false));
+            res.back().lineno = tok.lineno;
+            res.back().filename = scanner.filename;
+        }
+        else if (tok.type == "langle") {
+            scanner.back();
+            res.push_back(get_list(scanner, true));
             res.back().lineno = tok.lineno;
             res.back().filename = scanner.filename;
         }
@@ -150,6 +162,12 @@ List get_list (Scanner& scanner)
             throw std::runtime_error("illegal token "+tok.v_name);
         }
         else throw std::runtime_error("bad token type "+tok.type);
+    }
+
+    if (angle) {
+        res.push_front("vec"+std::to_string(res.size()));
+        res.front().lineno = first.lineno;
+        res.front().filename = scanner.filename;
     }
 
     return res;

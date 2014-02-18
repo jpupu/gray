@@ -3,12 +3,12 @@
 (prim
     (shape sphere)
     (material diffuse (R (rgb 1)))
-    (xform (translate (vec3 0 0 -1)))
+    (xform (translate <0 0 -1>))
     (emit (rgb 2))
     )
 (prim
     (shape plane)
     (material diffuse (R (rgb 1 .7 .4)))
-    (xform (translate (vec3 0 -1 0)))
+    (xform (translate <0 -1 0>))
     )
 )
