@@ -12,10 +12,10 @@ void evaluate_material (Value& val, List& args);
 void evaluate_xform (Value& val, List& args)
 {
     Transform T;
-    std::cout << "evalxform " << args << std::endl;
+    // std::cout << "evalxform " << args << std::endl;
 
     for (auto factor : args) {
-        std::cout << "evalxform factor " << factor << std::endl;
+        // std::cout << "evalxform factor " << factor << std::endl;
         if (!factor.is_list()) throw std::runtime_error("evaluate_xform: item not a list");
 
         auto aa = factor.list;
@@ -37,7 +37,7 @@ void evaluate_xform (Value& val, List& args)
             throw std::runtime_error("invalid transform name");
         }
     }
-
+    
     val.reset({"_xform", new Transform(T)});
 }
 

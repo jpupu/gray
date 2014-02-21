@@ -196,32 +196,40 @@ Value parse_file (const char* filename)
         in.close();
 
         Scanner scan(contents.str());
-        return Value(get_list(scan, true, false));
+        return Value(get_list(scan, false, false));
     }
     throw std::runtime_error("error reading file");
 }
 
 
 
-void Evaluator::evaluate (Value& val)
+void Evaluator::evaluate (Value& val, const std::string& prefix)
 {
-    std::cout << "evaluate:: " << val << std::endl;
+    std::cout << prefix << "evaluate:: " << val << std::endl;
     logger.set(val.filename, val.lineno);
     if (val.is_list()) {
         List& l = val.list;
         if (l.size() == 0) return;
+        std::cout << prefix << "evaluate args:: " << std::endl;
         for (Value& v : l) {
-            evaluate(v);
+            evaluate(v, prefix+"  ");
+            std::cout << prefix << "  :> " << v << std::endl;
         }
 
         if (l.front().is<std::string>()) {
             const std::string& name = l.front().get<std::string>();
             List args = tail(l);
+            std::cout << prefix << "evaluate function:: " << name << ":: " << args << std::endl;
 
-            if (name == "+") {
-                double sum = 0;
-                while (!args.empty()) { sum += *pop<double>(args); }
-                val.set(std::make_shared<double>(sum));
+            if (name == "def") {
+                auto varname = *pop<std::string>(args);
+                variables[varname] = args.front();
+                std::cout << prefix << "DEF:: " << varname << " := " << args.front() << std::endl;
+                args.pop_front();
+            }
+
+            else if (variables.count(name) == 1) {
+                val.reset(variables[name]);
             }
 
             else {

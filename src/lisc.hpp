@@ -389,7 +389,7 @@ class Evaluator
 public:
     Evaluator () {}
 
-    void evaluate (Value& val);
+    void evaluate (Value& val, const std::string& prefix="");
 
     typedef std::function<bool(Value&, const std::string&, List&)> EvalSet;
 
@@ -400,6 +400,7 @@ public:
 
 private:
     std::vector<EvalSet> funcs;
+    std::map<std::string, Value> variables;
 };
 
 Value parse_file (const char* filename);
