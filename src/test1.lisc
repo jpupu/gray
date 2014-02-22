@@ -1,0 +1,14 @@
+-- Light emitting sphere on a plane.
+(def reddish (rgb 1 .7 .4))
+(def redmatte (material diffuse (R (reddish))))
+(prim
+    (shape sphere)
+    (redmatte)
+    (xform (translate <0 0 -1>))
+    (emit (rgb 2))
+    )
+(prim
+    (shape plane)
+    (redmatte)
+    (xform (translate {- a comment! -} <0 -1 0>))
+    )

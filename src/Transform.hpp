@@ -65,4 +65,9 @@ inline Transform Transform::look_at (const vec3& eye, const vec3& center, const 
     return Transform(glm::lookAt(eye, center, up));
 }
 
+inline Transform operator* (const Transform& a, const Transform& b)
+{
+    return Transform(a.m * b.m, a.m_inv * b.m_inv);
+}
+
 #endif /* TRANSFORM_HPP */

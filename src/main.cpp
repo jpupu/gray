@@ -1,7 +1,6 @@
 
 #include "film.hpp"
 #include <iostream>
-#include "materials.hpp"
 #include "util.hpp"
 #include <cstring>
 #include <thread>
@@ -16,27 +15,8 @@ public:
 };
 
 
-#include "lisc_gray.hpp"
 
-Scene* load (const char* filename)
-{
-    Scene* scn = new Scene();
-    Evaluator ev;
-    LiscLinAlg* la = new LiscLinAlg(&ev);
-    LiscGray* lg = LiscGray::create(&ev, la);
-    ev.evaluate_file(filename);
 
-    auto* list = new ListAggregate();
-    for (auto p : lg->primitives) {
-        list->add(p);
-    }
-    scn->primitives = list;
-
-    delete lg;
-    delete la;
-    
-    return scn;
-}
 
 class SurfaceIntegrator
 {
@@ -194,13 +174,43 @@ public:
 
 };
 
+
+#include "lisc_gray.hpp"
+#include "lisc_linalg.hpp"
+
+Scene* evaluate_scene (Value& description) {
+    auto e = Evaluator();
+    e.add_set(evaluate_linalg);
+    e.add_set(evaluate_gray);
+    std::cout << description << std::endl;
+    e.evaluate(description);
+    std::cout << description << std::endl;
+
+    Scene* scene = new Scene();
+    ListAggregate* agg = new ListAggregate();
+    std::shared_ptr<Primitive> p = nullptr;
+    while ( (p = pop_attr<Primitive>("_prim", nullptr, description.list)) ) {
+        agg->add(p.get());
+    }
+    scene->primitives = agg;
+    return scene;
+}
+
+Scene* load (const char* filename)
+{
+    Value w( parse_file(filename) );
+    return evaluate_scene(w);
+}
+
+
+
 int main (int argc, char* argv[])
 {
     int resx = 256;
     int resy = 256;
     int spp = 100;
     unsigned int thread_count = 3;
-    const char* input_filename = "test1.scene";
+    const char* input_filename = "test1.lisc";
     const char* output_filename = "out";
 
     for (int i = 1; i < argc; ++i)

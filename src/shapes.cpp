@@ -1,4 +1,5 @@
 #include "gray.hpp"
+#include "lisc.hpp"
 
 class Sphere : public Shape
 {
@@ -6,10 +7,6 @@ public:
     bool intersect (Ray& r, Isect* isect);
 };
 
-Shape* make_sphere ()
-{
-    return new Sphere();
-}
 
 bool Sphere::intersect (Ray& ray, Isect* isect)
 {
@@ -61,11 +58,6 @@ public:
     }
 };
 
-Shape* make_plane ()
-{
-    return new Plane();
-}
-
 
 class Rectangle : public Shape
 {
@@ -89,7 +81,28 @@ public:
     }
 };
 
-Shape* make_rectangle ()
+
+static
+std::vector<std::shared_ptr<Shape>> shape_pool;
+
+void evaluate_shape (Value& val, List& args)
 {
-    return new Rectangle();
+    Shape* S;
+    auto name = *pop<std::string>(args);
+    if (name == "sphere") {
+        S = new Sphere();
+    }
+    else if (name == "plane") {
+        S = new Plane();
+    }
+    else if (name == "rectangle") {
+        S = new Rectangle();
+    }
+    else {
+        throw std::runtime_error("invalid shape name "+name);
+    }
+
+    std::shared_ptr<Shape> sh(S);
+    shape_pool.push_back(sh);
+    val.reset({"_shape", sh});
 }

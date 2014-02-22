@@ -1,6 +1,10 @@
 #ifndef UTIL_H__
 #define UTIL_H__
 
+#include "mymath.hpp"
+#include "Transform.hpp"
+#include <algorithm>
+
 inline
 float frand ()
 {
