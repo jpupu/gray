@@ -2,12 +2,17 @@
 (def reddish (rgb 1 .7 .4))
 (def redmatte (material diffuse (R (reddish))))
 (prim
-    (shape sphere)
+    (shape rectangle)
     (redmatte)
-    (xform (translate <0 0 -1>))
+    (xform (rotate 90 <1 0 0>))
     (emit (rgb 2))
     )
-(prim
+--(prim
+--    (shape rectangle)
+--    (redmatte)
+--    (xform (rotate 90 <1 0 0>) (translate <0 0 1>))
+--    )
+(rem prim
     (shape plane)
     (redmatte)
     (xform (translate {- a comment! -} <0 -1 0>))
