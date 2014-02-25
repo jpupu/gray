@@ -7,6 +7,7 @@
 void evaluate_shape (Value& val, List& args);
 void evaluate_material (Value& val, List& args);
 void evaluate_camera (Value& val, List& args);
+void evaluate_skylight (Value& val, List& args);
 
 
 
@@ -137,6 +138,10 @@ bool evaluate_gray (Value& val, const std::string& name, List& args)
     }
     else if (name == "camera") {
         evaluate_camera(val, args);
+        return true;    
+    }
+    else if (name == "skylight") {
+        evaluate_skylight(val, args);
         return true;    
     }
 

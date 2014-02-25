@@ -158,11 +158,23 @@ protected:
     virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const = 0;
 };
 
+
+class Skylight
+{
+public:
+    virtual Spectrum sample (const vec3& direction) const = 0;
+    Spectrum sample (const Ray& ray) const
+    {
+        return sample(ray.d);
+    }
+};
+
 class Scene
 {
 public:
     Primitive* primitives;
     Camera* camera;
+    Skylight* skylight;
 
     bool intersect (Ray& ray, Isect* isect) const
     {

@@ -94,7 +94,7 @@ public:
             Li = this->Li(newray, newisect, scene);
         }
         else {
-            Li = Spectrum(0.0f);//fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f);
+            Li = scene->skylight->sample(newray);
         }
         Li /= russian_p;
 
@@ -144,7 +144,7 @@ void render_block (Scene* scene, int spp,
                     // std::cout << isect.p << std::endl;
                     L = surf_integ->Li(ray, isect, scene);
                 }
-                else L = Spectrum(0,0,0);
+                else L = scene->skylight->sample(ray);
 
                 film.add_sample(xf,yf, L);
             }
@@ -207,6 +207,7 @@ Scene* evaluate_scene (Value& description) {
     }
     scene->primitives = agg;
     scene->camera = pop_attr<Camera>("_camera", description.list).get();
+    scene->skylight = pop_attr<Skylight>("_skylight", description.list).get();
     return scene;
 }
 
