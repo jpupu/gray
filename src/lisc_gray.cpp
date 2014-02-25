@@ -86,6 +86,32 @@ bool evaluate_immediates (Value& val, const std::string& name, List& args)
         return true;
     }
     
+    else if (name == "vec4") {
+        float r = *pop<double>(args);
+        if (args.empty()) {
+            val.set(std::make_shared<glm::vec4>(r));
+        }
+        else {
+            float g = *pop<double>(args);
+            float b = *pop<double>(args);
+            float a = *pop<double>(args);
+            val.set(std::make_shared<glm::vec4>(r,g,b,a));
+        }
+        return true;
+    }
+    
+    else if (name == "vec2") {
+        float r = *pop<double>(args);
+        if (args.empty()) {
+            val.set(std::make_shared<glm::vec2>(r));
+        }
+        else {
+            float g = *pop<double>(args);
+            val.set(std::make_shared<glm::vec2>(r,g));
+        }
+        return true;
+    }
+    
     return false;
 }
 
