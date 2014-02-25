@@ -17,3 +17,14 @@
     (redmatte)
     (xform (translate {- a comment! -} <0 -1 0>))
     )
+
+--(camera pinhole
+--    (xform (translate <0 0 6>))
+--    (fov 50)
+--    (size <36 36 0>))
+(camera thinlens
+    (xform (translate <0 0 6>) (rotate 20 <0 0 1>))
+    (focal_length 55)
+    (focus_distance 2)
+    (f_number 2.8)
+    (size <36 36>))

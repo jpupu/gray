@@ -120,10 +120,49 @@ public:
     }
 };
 
+
+class Camera
+{
+public:
+    Camera ()
+    {
+        set_film(36, 24); // standard full-frame 35mm.
+    }
+
+    void set_xform (const Transform& w_from_c)
+    {
+        world_from_cam = w_from_c;
+    }
+
+    void set_film (float w_mm, float h_mm)
+    {
+        film_w = w_mm / 1000.0f;
+        film_h = h_mm / 1000.0f;
+    }
+
+    Transform world_from_cam;
+    float film_w;
+    float film_h;
+
+    // x,y,u,v = 0..1
+    Ray generate_ray (float x, float y, float u, float v) const
+    {
+        auto d = get_vector((x*2-1)*film_w/2,
+                            (y*2-1)*film_h/2,
+                            (u*2-1),
+                            (v*2-1));
+        return Ray(d.first, d.second).transform(world_from_cam);
+    }
+
+protected:
+    virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const = 0;
+};
+
 class Scene
 {
 public:
     Primitive* primitives;
+    Camera* camera;
 
     bool intersect (Ray& ray, Isect* isect) const
     {

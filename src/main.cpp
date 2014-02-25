@@ -104,67 +104,8 @@ public:
     }
 };
 
-class Camera
-{
-public:
-    Camera ()
-    {
-        set_film(36, 24); // standard full-frame 35mm.
-    }
-
-    void set_xform (const Transform& w_from_c)
-    {
-        world_from_cam = w_from_c;
-    }
-
-    void set_film (float w_mm, float h_mm)
-    {
-        film_w = w_mm / 1000;
-        film_h = h_mm / 1000;
-    }
-
-    Transform world_from_cam;
-    float film_w;
-    float film_h;
-
-    // x,y,u,v = 0..1
-    Ray generate_ray (float x, float y, float u, float v) const
-    {
-        auto d = get_vector((x*2-1)*film_w/2,
-                            (y*2-1)*film_h/2,
-                            (u*2-1),
-                            (v*2-1));
-        return Ray(d.first, d.second).transform(world_from_cam);
-    }
-
-protected:
-    virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const = 0;
-};
 
 
-class PinholeCamera : public Camera
-{
-public:
-    PinholeCamera ()
-    {
-        set_fov(90);
-    }
-
-    float film_d;
-
-    void set_fov (float horizontal_fov_degrees)
-    {
-        film_d = (film_w/2) / tan(horizontal_fov_degrees/2 * M_PI/180);
-    }
-
-
-    virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const
-    {
-        vec3 I(x, y, film_d);
-        return std::make_pair(vec3(0,0,0), normalize(-I));
-    }
-    
-};
 
 std::ostream& operator<< (std::ostream& os, const glm::vec3& v)
 {
@@ -172,60 +113,6 @@ std::ostream& operator<< (std::ostream& os, const glm::vec3& v)
     return os;
 }
 
-class ThinLensCamera : public Camera
-{
-public:
-    ThinLensCamera ()
-    {
-        set_focal_length(55);
-        set_focus_distance(10);
-        set_f_number(5.6);
-    }
-
-    void set_focal_length (float mm)
-    {
-        f = mm / 1000;
-    }
-
-    void set_focus_distance (float m)
-    {
-        d_o = -m;
-    }
-
-    void set_f_number (float N)
-    {
-        this->N = N;
-    }
-
-    // focal length
-    // (represents optical power i.e. magnification)
-    float f;
-    // object distance (must be negative)
-    // (represents focus distance)
-    float d_o;
-    // the f-number;
-    float N;
-
-    virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const
-    {
-        // magnification
-        float M = f / (f - d_o);
-        // image distance
-        float d_i = -M * d_o;
-        // lens diameter
-        float D = f / N;
-
-        vec3 I(x, y, d_i);
-        vec3 P(u*D/2, v*D/2, 0.0f);
-        vec3 O(I.x/M, I.y/M, d_o);
-
-        // std::cout << "M = " << M << ",  di = " << d_i << std::endl;
-        // std::cout << O << std::endl;
-
-        return std::make_pair(P, normalize(O - P));
-    }
-
-};
 float xxx;
 void render_block (Scene* scene, int spp,
                    int fullresx, int fullresy,
@@ -235,36 +122,20 @@ void render_block (Scene* scene, int spp,
     Film& film = *filmp;
     PathIntegrator* surf_integ = new PathIntegrator();
 
-    // PinholeCamera* cam = new PinholeCamera();
-    // cam->film_w = 0.04;
-    // cam->film_h = 0.04;
-    // cam->film_d = 0.02;
-    ThinLensCamera* cam = new ThinLensCamera();
-    cam->set_xform( Transform::translate(vec3(0,0,6)) *  Transform::rotate(10, vec3(0,0,1)) );
-    cam->set_film(36, 36);
-    cam->set_focal_length(55);
-    cam->set_focus_distance(xxx);
-    cam->set_f_number(2.8);
+    Camera* cam = scene->camera;
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
             for (int s = 0; s < spp; s++) {
-                float xf = (xp+frand()) / (float)film.xres;
-                float yf = (yp+frand()) / (float)film.yres;
+                float rx = xp + frand();
+                float ry = yp + frand();
 
-                vec3 orig(0,0,6);
-                // vec3 dir(normalize(vec3(xf*2-1, yf*2-1, -1)));
-                vec3 dir(normalize(vec3(((xofs+xf*film.xres)/fullresx)*2-1,
-                                        ((yofs+yf*film.yres)/fullresy)*2-1, -1)));
-                float xfn = (xofs + xf*film.xres) / fullresx;
-                float yfn = (yofs + yf*film.yres) / fullresy;
-                // auto kkk = cam->generate_ray(xfn,yfn, frand(),frand());
-                // orig = orig + kkk.first;
-                // dir = kkk.second;
-                // dir = cam->generate_ray(xfn,yfn, .5,.5);
-                // std::cout << xfn << "," << yfn << std::endl;
+                float xf = rx / (float)film.xres;
+                float yf = ry / (float)film.yres;
 
-                // Ray ray(orig, dir);
+                float xfn = (xofs + rx) / fullresx;
+                float yfn = (yofs + ry) / fullresy;
+                
                 Ray ray( cam->generate_ray(xfn,yfn, frand(),frand()) );
                 Isect isect;
                 Spectrum L(0.0f);
@@ -335,6 +206,7 @@ Scene* evaluate_scene (Value& description) {
         agg->add(p.get());
     }
     scene->primitives = agg;
+    scene->camera = pop_attr<Camera>("_camera", description.list).get();
     return scene;
 }
 
@@ -369,9 +241,6 @@ int main (int argc, char* argv[])
         }
         else if (strcmp(argv[i], "-m") == 0) {
             thread_count = atol(argv[++i]);
-        }
-        else if (strcmp(argv[i], "-xxx") == 0) {
-            xxx = atof(argv[++i]);
         }
         else {
             input_filename = argv[i];
