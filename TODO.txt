@@ -1,0 +1,18 @@
+To do:
+
+* environment lighting (skybox)
+* camera
+ ** pinhole
+ ** thinlens
+* models
+ ** box
+ ** ply
+ ** obj
+* fresnel
+    * dielectic [done]
+    * metallic
+* dielectric material
+* metallic material
+* marble material
+* SSS
+* checkers texture
