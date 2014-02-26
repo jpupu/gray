@@ -1,2 +1,7 @@
 a.out
-out.png
+*.png
+*.jpg
+*.rgbe
+out.float
+out.hdr
+*.sublime-*
