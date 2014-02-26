@@ -82,6 +82,53 @@ public:
 };
 
 
+class Triangle : public Shape
+{
+public:
+    vec3 v[3];
+
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        constexpr float EPSILON = 1e-6f;
+        // Möller–Trumbore intersection algorithm
+        // http://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+        // http://www.scratchapixel.com/lessons/3d-basic-lessons/lesson-9-ray-triangle-intersection/m-ller-trumbore-algorithm/
+
+        vec3 e1 = v[1] - v[0];
+        vec3 e2 = v[2] - v[0];
+        vec3 pvec = cross(ray.d, e2);
+        float det = dot(e1, pvec);
+
+        // if the determinant is negative, the triangle is backfacing
+        // if the determinant is close to zero, the ray won't hit
+        if (det < EPSILON) return false;
+
+        float inv_det = 1 / det;
+
+        // Calculate u.
+        vec3 tvec = ray.o - v[0];
+        float u = dot(tvec, pvec) * inv_det;
+        if (u < 0 || u > 1) return false;
+
+        // Calculate v.
+        vec3 qvec = cross(tvec, e1);
+        float v = dot(ray.d, qvec) * inv_det;
+        if (v < 0 || v > 1 || u + v > 1) return false;
+
+        // Calculate t.
+        float t = dot(e2, qvec) * inv_det;
+        if (t < ray.tmin || t > ray.tmax) return false;
+
+        // Hit.
+        ray.tmax = t;
+        isect->p = ray.o + t * ray.d;
+        isect->n = normalize(cross(e1, e2));
+
+        return true;
+    }
+};
+
+
 static
 std::vector<std::shared_ptr<Shape>> shape_pool;
 
@@ -97,6 +144,13 @@ void evaluate_shape (Value& val, List& args)
     }
     else if (name == "rectangle") {
         S = new Rectangle();
+    }
+    else if (name == "triangle") {
+        auto* t = new Triangle();
+        t->v[0] = *pop<vec3>(args);
+        t->v[1] = *pop<vec3>(args);
+        t->v[2] = *pop<vec3>(args);
+        S = t;
     }
     else {
         throw std::runtime_error("invalid shape name "+name);

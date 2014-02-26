@@ -1,0 +1,26 @@
+-- Light emitting sphere on a plane.
+(def reddish (rgb 1 .7 .4))
+(def redmatte (material diffuse (R (reddish))))
+(prim
+    (shape triangle <0 -1 0> <0 1 0> <-1 0 0>)
+    (redmatte)
+    (xform (translate <0 0 -1>))
+    )
+(prim
+    (shape plane)
+    (redmatte)
+    (xform (translate {- a comment! -} <0 -1 0>))
+    )
+
+(skylight solid (R (rgb 2)))
+
+--(camera pinhole
+--    (xform (translate <0 0 6>))
+--    (fov 50)
+--    (size <36 36 0>))
+(camera thinlens
+    (xform (translate <0 0 6>) (rotate 20 <0 0 1>))
+    (focal_length 55)
+    (focus_distance 6)
+    (f_number 2.8)
+    (size <36 36>))
