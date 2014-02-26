@@ -129,6 +129,62 @@ public:
 };
 
 
+class Mesh : public Shape
+{
+public:
+    std::vector<vec3> vertices;
+    std::vector<int> vertex_indices;
+
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        bool hit = false;
+        for (unsigned int i = 0; i < vertex_indices.size()/3; ++i) {
+            hit |= intersect_triangle(i, ray, isect);
+        }
+        return hit;
+    }
+
+    bool intersect_triangle (int triangle, Ray& ray, Isect* isect)
+    {
+        vec3* vert = &vertices[vertex_indices[triangle*3]];
+
+        constexpr float EPSILON = 1e-6f;
+        vec3 e1 = vert[1] - vert[0];
+        vec3 e2 = vert[2] - vert[0];
+        vec3 pvec = cross(ray.d, e2);
+        float det = dot(e1, pvec);
+
+        // if the determinant is negative, the triangle is backfacing
+        // if the determinant is close to zero, the ray won't hit
+        if (det < EPSILON) return false;
+
+        float inv_det = 1 / det;
+
+        // Calculate u.
+        vec3 tvec = ray.o - vert[0];
+        float u = dot(tvec, pvec) * inv_det;
+        if (u < 0 || u > 1) return false;
+
+        // Calculate v.
+        vec3 qvec = cross(tvec, e1);
+        float v = dot(ray.d, qvec) * inv_det;
+        if (v < 0 || v > 1 || u + v > 1) return false;
+
+        // Calculate t.
+        float t = dot(e2, qvec) * inv_det;
+        if (t < ray.tmin || t > ray.tmax) return false;
+
+        // Hit.
+        ray.tmax = t;
+        isect->p = ray.o + t * ray.d;
+        isect->n = normalize(cross(e1, e2));
+
+        return true;
+    }
+};
+
+
+
 static
 std::vector<std::shared_ptr<Shape>> shape_pool;
 
@@ -151,6 +207,19 @@ void evaluate_shape (Value& val, List& args)
         t->v[1] = *pop<vec3>(args);
         t->v[2] = *pop<vec3>(args);
         S = t;
+    }
+    else if (name == "direct_mesh") {
+        auto* m = new Mesh();
+        int i = 0;
+        while (args.size() > 0) {
+            m->vertices.push_back( *pop<vec3>(args) );
+            m->vertices.push_back( *pop<vec3>(args) );
+            m->vertices.push_back( *pop<vec3>(args) );
+            m->vertex_indices.push_back( i++ );
+            m->vertex_indices.push_back( i++ );
+            m->vertex_indices.push_back( i++ );
+        }
+        S = m;
     }
     else {
         throw std::runtime_error("invalid shape name "+name);

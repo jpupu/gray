@@ -1,10 +1,19 @@
 -- Light emitting sphere on a plane.
 (def reddish (rgb 1 .7 .4))
 (def redmatte (material diffuse (R (reddish))))
+(def chalk (material diffuse (R (rgb 1))))
 (prim
     (shape triangle <0 -1 0> <0 1 0> <-1 0 0>)
-    (redmatte)
-    (xform (translate <0 0 -1>))
+    (chalk)
+    (xform (translate <-1 0 -1>))
+    )
+(prim
+    (shape direct_mesh
+        <0 -1 0> <0 1 0> <-1 1 0>
+        <-1 1 0> <-1 -1 0> <0 -1 0>
+    )
+    (chalk)
+    (xform (translate <1 0 -1>))
     )
 (prim
     (shape plane)
@@ -21,6 +30,6 @@
 (camera thinlens
     (xform (translate <0 0 6>) (rotate 20 <0 0 1>))
     (focal_length 55)
-    (focus_distance 6)
+    (focus_distance 7)
     (f_number 2.8)
     (size <36 36>))
