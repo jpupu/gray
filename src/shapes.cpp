@@ -135,7 +135,7 @@ public:
     std::vector<vec3> vertices;
     std::vector<int> vertex_indices;
 
-    bool intersect (Ray& ray, Isect* isect)
+    virtual bool intersect (Ray& ray, Isect* isect)
     {
         bool hit = false;
         for (unsigned int i = 0; i < vertex_indices.size()/3; ++i) {
@@ -186,10 +186,106 @@ public:
     }
 };
 
+
+class BBox
+{
+public:
+    vec3 min, max;
+
+    void extend (const vec3& v)
+    {
+        if (v.x < min.x) min.x = v.x;
+        if (v.y < min.y) min.y = v.y;
+        if (v.z < min.z) min.z = v.z;
+        if (v.x > max.x) max.x = v.x;
+        if (v.y > max.y) max.y = v.y;
+        if (v.z > max.z) max.z = v.z;
+    }
+
+    bool intersect (const Ray& ray) const
+    {
+        // http://www.scratchapixel.com/lessons/3d-basic-lessons/lesson-7-intersecting-simple-shapes/ray-box-intersection/
+        
+        float tmin = (min.x - ray.o.x) / ray.d.x;
+        float tmax = (max.x - ray.o.x) / ray.d.x;
+        if (tmin > tmax) std::swap(tmin, tmax);
+        float tymin = (min.y - ray.o.y) / ray.d.y;
+        float tymax = (max.y - ray.o.y) / ray.d.y;
+        if (tymin > tymax) std::swap(tymin, tymax);
+        if ((tmin > tymax) || (tymin > tmax))
+        return false;
+        if (tymin > tmin) tmin = tymin;
+        if (tymax < tmax) tmax = tymax;
+        float tzmin = (min.z - ray.o.z) / ray.d.z;
+        float tzmax = (max.z - ray.o.z) / ray.d.z;
+        if (tzmin > tzmax) std::swap(tzmin, tzmax);
+        if ((tmin > tzmax) || (tzmin > tmax)) return false;
+        if (tzmin > tmin) tmin = tzmin;
+        if (tzmax < tmax) tmax = tzmax;
+        if ((tmin > ray.tmax) || (tmax < ray.tmin)) return false;
+        // if (ray.tmin < tmin) ray.tmin = tmin;
+        // if (ray.tmax > tmax) ray.tmax = tmax;
+        return true;
+    }
+};
+
+class BVHNode
+{
+public:
+    BBox bbox;
+    std::vector<int> faces;
+    BVHNode* child;
+    Mesh* mesh;
+
+    BVHNode () {}
+    BVHNode (Mesh* m, int face)
+        : faces({face}), child(nullptr), mesh(m)
+    {
+        bbox.max = bbox.min = m->vertices[m->vertex_indices[face*3+0]];
+        bbox.extend(m->vertices[m->vertex_indices[face*3+1]]);
+        bbox.extend(m->vertices[m->vertex_indices[face*3+2]]);
+    }
+
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        if (!bbox.intersect(ray)) return false;
+        if (child) {
+            return child->intersect(ray, isect);
+        }
+        bool hit = false;
+        for (unsigned int i = 0; i < faces.size(); i++) {
+            hit |= mesh->intersect_triangle(i, ray, isect);
+            
+        }
+        return hit;
+    }
+
+    void add (int face)
+    {
+        faces.push_back(face);
+        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+0]]);
+        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+1]]);
+        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+2]]);
+    }
+};
+
+class BVHMesh : public Mesh
+{
+public:
+    BVHNode root;
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        return root.intersect(ray, isect);
+    }
+
+};
+
+
 #include <fstream>
 Mesh* load_ply (std::ifstream& ifs)
 {
-    Mesh* M = new Mesh();
+    auto* M = new BVHMesh();
+    // auto* M = new Mesh();
 
     char buf[256];
     ifs.getline(buf, 256);
@@ -236,6 +332,9 @@ Mesh* load_ply (std::ifstream& ifs)
         M->vertex_indices.push_back(b);
         M->vertex_indices.push_back(c);
     }
+
+    M->root = BVHNode(M, 0);
+    for (int i = 1; i < fcount; i++) M->root.add(i);
 
     return M;
 }
