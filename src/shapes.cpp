@@ -146,22 +146,25 @@ public:
 
     bool intersect_triangle (int triangle, Ray& ray, Isect* isect)
     {
-        vec3* vert = &vertices[vertex_indices[triangle*3]];
+        const vec3& vert0 = vertices[vertex_indices[triangle*3+0]];
+        const vec3& vert1 = vertices[vertex_indices[triangle*3+1]];
+        const vec3& vert2 = vertices[vertex_indices[triangle*3+2]];
 
-        constexpr float EPSILON = 1e-6f;
-        vec3 e1 = vert[1] - vert[0];
-        vec3 e2 = vert[2] - vert[0];
+        constexpr float EPSILON = 1e-7f;
+        vec3 e1 = vert1 - vert0;
+        vec3 e2 = vert2 - vert0;
         vec3 pvec = cross(ray.d, e2);
         float det = dot(e1, pvec);
 
         // if the determinant is negative, the triangle is backfacing
         // if the determinant is close to zero, the ray won't hit
-        if (det < EPSILON) return false;
+        if (-EPSILON < det && det < EPSILON) return false;
+        // if (det < EPSILON) return false;
 
         float inv_det = 1 / det;
 
         // Calculate u.
-        vec3 tvec = ray.o - vert[0];
+        vec3 tvec = ray.o - vert0;
         float u = dot(tvec, pvec) * inv_det;
         if (u < 0 || u > 1) return false;
 
@@ -182,6 +185,60 @@ public:
         return true;
     }
 };
+
+#include <fstream>
+Mesh* load_ply (std::ifstream& ifs)
+{
+    Mesh* M = new Mesh();
+
+    char buf[256];
+    ifs.getline(buf, 256);
+    if (buf != std::string("ply")) throw std::runtime_error("ply: bad magic");
+
+    int vcount = 0;
+    int fcount = 0;
+
+    std::string tok;
+    ifs >> tok;
+    while (tok != "end_header") {
+        if (tok == "element") {
+            ifs >> tok;
+            if (tok == "vertex") {
+                ifs >> vcount;
+            }
+            else {
+                ifs >> fcount;
+            }
+        }
+        else {
+            ifs.getline(buf, 256);
+        }
+        ifs >> tok;
+    }
+    // ifs.getline(buf, 256);
+    // if (buf != std::string("format ascii 1.0")) throw std::runtime_error("ply: bad format");
+    // ifs.getline(buf, 256);
+    // if (buf != std::string("format ascii 1.0")) throw std::runtime_error("ply: bad format");
+
+    std::cout << "vertex count " << vcount << std::endl;
+    std::cout << "face count " << fcount << std::endl;
+
+    for (int i = 0; i < vcount; i++) {
+        float x, y, z;
+        ifs >> x >> y >> z;
+        ifs.getline(buf, 256);
+        M->vertices.push_back(vec3(x,y,z));
+    }
+    for (int i = 0; i < fcount; i++) {
+        int cnt, a, b, c;
+        ifs >> cnt >> a >> b >> c;
+        M->vertex_indices.push_back(a);
+        M->vertex_indices.push_back(b);
+        M->vertex_indices.push_back(c);
+    }
+
+    return M;
+}
 
 
 
@@ -219,6 +276,11 @@ void evaluate_shape (Value& val, List& args)
             m->vertex_indices.push_back( i++ );
             m->vertex_indices.push_back( i++ );
         }
+        S = m;
+    }
+    else if (name == "ply_mesh") {
+        std::ifstream ifs(*pop<std::string>(args));
+        auto* m = load_ply(ifs);
         S = m;
     }
     else {
