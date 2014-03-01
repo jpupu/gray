@@ -39,6 +39,33 @@ int abs_min_elem (const vec3& a)
 }
 
 inline
+int max_elem (const vec3& a)
+{
+    return ((a.x > a.y)
+            ? ((a.x > a.z)
+               ? 0
+               : (a.z > a.y) ? 2 : 1)
+            : ((a.y > a.z)
+               ? 1
+               : (a.x > a.z) ? 0 : 2));
+}
+
+inline
+int abs_max_elem (const vec3& a)
+{
+    float x = fabs(a.x);
+    float y = fabs(a.y);
+    float z = fabs(a.z);
+    return ((x > y)
+            ? ((x > z)
+               ? 0
+               : (z > y) ? 2 : 1)
+            : ((y > z)
+               ? 1
+               : (x > z) ? 0 : 2));
+}
+
+inline
 void orthonormal_basis (const vec3& r, vec3* s, vec3* t)
 {
     int i = abs_min_elem(r);
