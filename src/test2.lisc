@@ -12,7 +12,9 @@
     (xform (translate {- a comment! -} <0 -1 0>))
     )
 
-(skylight solid (R (rgb 2)))
+--(skylight solid (R (rgb 2)))
+--(skylight probe (file uf.hdr))
+(skylight probe (file ../all_probes/grace_probe.hdr))
 
 --(camera pinhole
 --    (xform (translate <0 0 6>))
@@ -20,7 +22,7 @@
 --    (size <36 36 0>))
 (camera thinlens
     (xform (translate <0 0 6>) (rotate 20 <0 0 1>))
-    (focal_length 55)
+    (focal_length 28)
     (focus_distance 6)
     (f_number 2.8)
     (size <36 36>))
