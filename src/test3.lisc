@@ -1,0 +1,77 @@
+-- Light emitting sphere on a plane.
+(def reddish (rgb 1 .7 .4))
+(def redmatte (material diffuse (R (reddish))))
+(def chalk (material diffuse (R (rgb 1))))
+(REM prim
+    (shape triangle <0 -1 0> <0 1 0> <-1 0 0>)
+    (chalk)
+    (xform (translate <-1 0 -1>))
+    )
+(X prim
+    (shape direct_mesh
+        --<0 -.1 0> <-.1 .1 0> <0 .1 0>
+        --<-.1 .1 0> <0 -.1 0> <-.1 -.1 0>
+        <0 -1 0> <0 1 0> <-1 1 0>
+        <-1 1 0> <-1 -1 0>  <0 -1 0>
+    )
+    (chalk)
+    --(xform (scale 10) (translate <1 0 -1>))
+    (xform (rotate -0 <0 1 0>) (translate <0 0 -0>) (scale 1))
+    )
+(X prim
+    (shape direct_mesh
+        --<0 -.1 0> <-.1 .1 0> <0 .1 0>
+        --<-.1 .1 0> <0 -.1 0> <-.1 -.1 0>
+        <0 -1 0>  < 1 1 0> <0 1 0>
+        < 1 1 0>  <0 -1 0>  < 1 -1 0>
+    )
+    (chalk)
+    --(xform (scale 10) (translate <1 0 -1>))
+    (xform (rotate -45 <1 0 0>) (translate <0 0 -0>) (scale 1))
+    )
+
+(prim
+    (shape rectangle)
+    (chalk)
+    (xform (rotate -180 <1 0 0>) (scale 20) (translate <0 10 0>))
+    (emit (rgb 10 0 0))
+    )
+
+(REM prim
+    (shape sphere)
+    (redmatte)
+    (xform (scale .5) (translate <-1 -.5 1>))
+    (emit (rgb 15 0 0))
+    )
+
+(POH prim
+    (shape ply_mesh triangle.ply)
+    (chalk)
+    --(xform (scale 15) (translate <0 -1.4 0>))
+    (xform (scale 15) (translate <0 0 0>))
+    )
+( prim
+    (shape ply_mesh bun_zipper.ply)
+    (chalk)
+    --(xform (scale 15) (translate <0 -1.4 0>))
+    (xform (scale 15) (translate <0 -1.4 0>))
+    )
+(REM prim
+    (shape plane)
+    (redmatte)
+    (xform (translate {- a comment! -} <0 -1 0>))
+    )
+
+(skylight solid (R (rgb .2)))
+
+--(camera pinhole
+--    (xform (translate <0 0 6>))
+--    (fov 50)
+--    (size <36 36 0>))
+(camera thinlens
+    --(xform (translate <0 10 0>) (rotate -90 <1 0 0>))
+    (xform (translate <0 0 6>) (rotate -0 <1 0 0>))
+    (focal_length 55)
+    (focus_distance 7)
+    (f_number 2.8)
+    (size <36 36>))

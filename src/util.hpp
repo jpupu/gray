@@ -24,9 +24,51 @@ int min_elem (const vec3& a)
 }
 
 inline
+int abs_min_elem (const vec3& a)
+{
+    float x = fabs(a.x);
+    float y = fabs(a.y);
+    float z = fabs(a.z);
+    return ((x < y)
+            ? ((x < z)
+               ? 0
+               : (z < y) ? 2 : 1)
+            : ((y < z)
+               ? 1
+               : (x < z) ? 0 : 2));
+}
+
+inline
+int max_elem (const vec3& a)
+{
+    return ((a.x > a.y)
+            ? ((a.x > a.z)
+               ? 0
+               : (a.z > a.y) ? 2 : 1)
+            : ((a.y > a.z)
+               ? 1
+               : (a.x > a.z) ? 0 : 2));
+}
+
+inline
+int abs_max_elem (const vec3& a)
+{
+    float x = fabs(a.x);
+    float y = fabs(a.y);
+    float z = fabs(a.z);
+    return ((x > y)
+            ? ((x > z)
+               ? 0
+               : (z > y) ? 2 : 1)
+            : ((y > z)
+               ? 1
+               : (x > z) ? 0 : 2));
+}
+
+inline
 void orthonormal_basis (const vec3& r, vec3* s, vec3* t)
 {
-    int i = min_elem(r);
+    int i = abs_min_elem(r);
     int i2 = (i+1) % 3;
     int i3 = (i+2) % 3;
     if (i3 < i2) std::swap(i2,i3);
@@ -45,7 +87,6 @@ Transform build_tangent_from_world (const vec3& normal)
 {
     vec3 t, b;
     orthonormal_basis(normal, &t, &b);
-
     glm::mat4 m(glm::vec4(t, 1.0f),
                 glm::vec4(b, 1.0f),
                 glm::vec4(normal, 1.0f),
