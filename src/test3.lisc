@@ -44,14 +44,14 @@
     (emit (rgb 15 0 0))
     )
 
-(prim
+(POH prim
     (shape ply_mesh triangle.ply)
     (chalk)
     --(xform (scale 15) (translate <0 -1.4 0>))
     (xform (scale 15) (translate <0 0 0>))
     )
 ( prim
-    (shape ply_mesh bun_zipper_res4.ply)
+    (shape ply_mesh bun_zipper.ply)
     (chalk)
     --(xform (scale 15) (translate <0 -1.4 0>))
     (xform (scale 15) (translate <0 -1.4 0>))

@@ -151,7 +151,7 @@ public:
         const vec3& vert1 = vertices[vertex_indices[triangle*3+1]];
         const vec3& vert2 = vertices[vertex_indices[triangle*3+2]];
 
-        constexpr float EPSILON = 1e-7f;
+        // constexpr float EPSILON = 1e-8f;
         vec3 e1 = vert1 - vert0;
         vec3 e2 = vert2 - vert0;
         vec3 pvec = cross(ray.d, e2);
@@ -159,7 +159,8 @@ public:
 
         // if the determinant is negative, the triangle is backfacing
         // if the determinant is close to zero, the ray won't hit
-        if (-EPSILON < det && det < EPSILON) return false;
+        // if (-EPSILON < det && det < EPSILON) return false;
+        if (det == 0) return false;
         // if (det < EPSILON) return false;
 
         float inv_det = 1 / det;
@@ -304,7 +305,7 @@ public:
         }
         children.push_back(left);
         children.push_back(right);
-        std::cout << "split "<<faces.size()<<" to "<<left->faces.size()<<"+"<<right->faces.size()<<"\n";
+        // std::cout << "split "<<faces.size()<<" to "<<left->faces.size()<<"+"<<right->faces.size()<<"\n";
         faces.clear();
         left->split();
         right->split();
