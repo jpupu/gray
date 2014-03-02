@@ -64,7 +64,7 @@ public:
     virtual Spectrum Li (const Ray& ray, const Isect& isect, const Scene* scene)
     {
         rays++;
-
+        // return Spectrum(isect.n*.5f+Spectrum(.5f));
         BSDF* bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
@@ -106,12 +106,6 @@ public:
 
 
 
-
-std::ostream& operator<< (std::ostream& os, const glm::vec3& v)
-{
-    os << "<" << v.x << ", " << v.y << ", " << v.z << ">";
-    return os;
-}
 
 float xxx;
 void render_block (Scene* scene, int spp,

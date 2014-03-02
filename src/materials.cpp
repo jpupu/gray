@@ -245,7 +245,7 @@ public:
 
     virtual BSDF* get_bsdf (const vec3& p) const
     {
-        Spectrum r = Checkers3D(R, R*0.3f).sample(vec2(0,0), p);
+        Spectrum r = R;//Checkers3D(R, R*0.3f).sample(vec2(0,0), p);
         return new Lambertian(r);
     }
 
