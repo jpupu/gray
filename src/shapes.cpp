@@ -1,5 +1,6 @@
 #include "gray.hpp"
 #include "lisc.hpp"
+#include "util.hpp"
 
 class Sphere : public Shape
 {
@@ -192,6 +193,10 @@ class BBox
 public:
     vec3 min, max;
 
+    BBox ()
+        : min(vec3(99999)), max(vec3(-99999))
+    { }
+
     void extend (const vec3& v)
     {
         if (v.x < min.x) min.x = v.x;
@@ -234,28 +239,28 @@ class BVHNode
 public:
     BBox bbox;
     std::vector<int> faces;
-    BVHNode* child;
+    std::vector<BVHNode*> children;
     Mesh* mesh;
 
-    BVHNode () {}
-    BVHNode (Mesh* m, int face)
-        : faces({face}), child(nullptr), mesh(m)
+    const vec3& vertex (int face, int i) const
     {
-        bbox.max = bbox.min = m->vertices[m->vertex_indices[face*3+0]];
-        bbox.extend(m->vertices[m->vertex_indices[face*3+1]]);
-        bbox.extend(m->vertices[m->vertex_indices[face*3+2]]);
+        return mesh->vertices[mesh->vertex_indices[face*3+i]];
     }
+
+    BVHNode () {}
+    BVHNode (Mesh* m)
+        : mesh(m)
+    { }
 
     bool intersect (Ray& ray, Isect* isect)
     {
         if (!bbox.intersect(ray)) return false;
-        if (child) {
-            return child->intersect(ray, isect);
-        }
         bool hit = false;
+        for (auto* n : children) {
+            hit |= n->intersect(ray, isect);
+        }
         for (unsigned int i = 0; i < faces.size(); i++) {
-            hit |= mesh->intersect_triangle(i, ray, isect);
-            
+            hit |= mesh->intersect_triangle(faces[i], ray, isect);
         }
         return hit;
     }
@@ -263,9 +268,67 @@ public:
     void add (int face)
     {
         faces.push_back(face);
-        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+0]]);
-        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+1]]);
-        bbox.extend(mesh->vertices[mesh->vertex_indices[face*3+2]]);
+        bbox.extend(vertex(face, 0));
+        bbox.extend(vertex(face, 1));
+        bbox.extend(vertex(face, 2));
+    }
+
+    void split ()
+    {
+        if (faces.size() <= 3) return;
+        int axis = abs_max_elem(bbox.max - bbox.min);
+        float th = (bbox.max[axis] + bbox.min[axis]) / 2;
+
+        BVHNode* left = new BVHNode(mesh);
+        BVHNode* right = new BVHNode(mesh);
+        // for (unsigned int i = 0; i < faces.size(); i++) {
+        for (int i : faces) {
+            bool go_left = false;
+            bool go_right = false;
+            for (int k = 0; k < 3; k++) {
+                if (vertex(i,k)[axis] < th) go_left = true;
+                if (vertex(i,k)[axis] >= th) go_right = true;
+            }
+            if (go_left) left->add(i);
+            if (go_right) right->add(i);
+            if (!go_left && !go_right) {
+                std::cout << "split FAILED: a face not in left or right child!\n";
+            }
+        }
+        if (left->faces.size() == 0 || right->faces.size() == 0 ||
+            left->faces.size() == faces.size() || right->faces.size() == faces.size()) {
+            // could not partition
+            delete left;
+            delete right;
+            return;
+        }
+        children.push_back(left);
+        children.push_back(right);
+        std::cout << "split "<<faces.size()<<" to "<<left->faces.size()<<"+"<<right->faces.size()<<"\n";
+        faces.clear();
+        left->split();
+        right->split();
+    }
+
+    int calc ()
+    {
+        int cnt = 0;
+        for (auto* n : children) {
+            cnt += n->calc();
+        }
+        cnt += faces.size();
+        return cnt;
+    }
+
+    void plot (std::vector<int>& cnts)
+    {
+        for (auto* n : children) {
+            n->plot(cnts);
+        }
+        for (unsigned int i = 0; i < faces.size(); i++) {
+            cnts[faces[i]]++;
+        }
+
     }
 };
 
@@ -333,9 +396,15 @@ Mesh* load_ply (std::ifstream& ifs)
         M->vertex_indices.push_back(c);
     }
 
-    M->root = BVHNode(M, 0);
-    for (int i = 1; i < fcount; i++) M->root.add(i);
-
+    M->root = BVHNode(M);
+    for (int i = 0; i < fcount; i++) M->root.add(i);
+    M->root.split();
+    std::cout << "FFF real count "<<fcount<<" counted "<<M->root.calc()<<"\n";
+    // std::vector<int> counts(fcount, 0);
+    // M->root.plot(counts);
+    // for(int x : counts) {
+    //     std::cout << "CCC " << x << "\n";
+    // }
     return M;
 }
 
