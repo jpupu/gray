@@ -67,7 +67,7 @@ inline Transform Transform::look_at (const vec3& eye, const vec3& center, const 
 
 inline Transform operator* (const Transform& a, const Transform& b)
 {
-    return Transform(a.m * b.m, a.m_inv * b.m_inv);
+    return Transform(a.m * b.m, b.m_inv * a.m_inv);
 }
 
 #endif /* TRANSFORM_HPP */
