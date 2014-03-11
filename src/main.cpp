@@ -113,6 +113,7 @@ void render_block (Scene* scene, int spp,
                    int xofs, int yofs,
                    Film* filmp)
 {
+    srand(xofs+yofs*fullresx);
     Film& film = *filmp;
     PathIntegrator* surf_integ = new PathIntegrator();
 
