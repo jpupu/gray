@@ -2,13 +2,15 @@ LANG=en
 
 CC= gcc
 
-CXXFLAGS = -O3 -pedantic -Wall -Werror -g -ggdb --std=c++11
+CXXFLAGS = -O3 -pedantic -Wall -g -ggdb --std=c++11
+CXXFLAGS += -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
+CFLAGS += -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
 
 INCLUDE = -I../../glm-0.9.4.1/
 
 CXXFLAGS += $(INCLUDE)
 
-OBJS = main.o film.o shapes.o materials.o cameras.o skylights.o rgbe.o lodepng.o lisc_gray.o lisc_linalg.o lisc.o trex/trex.o
+OBJS = main.o film.o shapes.o materials.o cameras.o skylights.o rgbe.o lodepng.o lisc_gray.o lisc_linalg.o lisc.o malloc.o trex/trex.o
 
 .PHONY: run clean
 

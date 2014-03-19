@@ -5,6 +5,7 @@
 #include <cstring>
 #include <thread>
 #include <list>
+#include "malloc.hpp"
 
 class Texture
 {
@@ -238,6 +239,9 @@ int main (int argc, char* argv[])
         else if (strcmp(argv[i], "-m") == 0) {
             thread_count = atol(argv[++i]);
         }
+        else if (strcmp(argv[i], "-M") == 0) {
+            set_mem_limit(atol(argv[++i]) * 1000000);
+        }
         else {
             input_filename = argv[i];
         }
@@ -285,6 +289,8 @@ int main (int argc, char* argv[])
                 t->start();
                 active.push_back(t);
             }
+
+            std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes)\n";
         }
 
 
@@ -297,8 +303,8 @@ int main (int argc, char* argv[])
         printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
 
         char filename[256];
-        sprintf(filename, "%s.png", output_filename);
-        wholefilm.save(filename);
+        // sprintf(filename, "%s.png", output_filename);
+        // wholefilm.save(filename);
         sprintf(filename, "%s.float", output_filename);
         wholefilm.save_float(filename);
         sprintf(filename, "%s.hdr", output_filename);

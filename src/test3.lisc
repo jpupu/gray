@@ -32,9 +32,13 @@
 
 (prim
     (shape rectangle)
-    (chalk)
-    (xform (rotate -180 <1 0 0>) (scale 20) (translate <0 10 0>))
-    (emit (rgb 10 0 0))
+    (redmatte)
+    (xform (translate <0 -1 0>) (scale 2))
+    )
+(prim
+    (shape rectangle)
+    (redmatte)
+    (xform (translate <0 -3 2>) (rotate 90 <1 0 0>) (scale 2))
     )
 
 (REM prim
@@ -50,11 +54,17 @@
     --(xform (scale 15) (translate <0 -1.4 0>))
     (xform (scale 15) (translate <0 0 0>))
     )
-( prim
+(REM prim
     (shape ply_mesh bun_zipper.ply)
     (chalk)
     --(xform (scale 15) (translate <0 -1.4 0>))
-    (xform (scale 15) (translate <0 -1.4 0>))
+    (xform (translate <0 -1.5 0>) (scale 15))
+    )
+(prim
+    (shape sphere)
+    (material glass (R (rgb .9 .9 1)))
+    (xform (translate <0 -0 0>) (scale 1))
+    --(xform (translate <.8 -0.8 .6>) (scale .2))
     )
 (REM prim
     (shape plane)
@@ -62,7 +72,8 @@
     (xform (translate {- a comment! -} <0 -1 0>))
     )
 
-(skylight solid (R (rgb .2)))
+--(skylight solid (R (rgb .2)))
+(skylight probe (file ../all_probes/rnl_probe.hdr))
 
 --(camera pinhole
 --    (xform (translate <0 0 6>))
