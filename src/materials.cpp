@@ -68,8 +68,8 @@ public:
         float et = eta_t;
         // swap indices if exiting
         // (incident direction is on the other side than normal)
-        if (cos_i < 0) std::swap(ei, et);
-
+        if (cos_i < 0) { std::swap(ei, et); cos_i = -cos_i; }
+        
         // Snell's law: eta_i * sin_i = eta_t * sin_t
         // Pythagoras: c^2 = sin_i^2 + cos_i^2,  c==1 since w_i is normalized
         float sin_i = sqrtf( 1 - cos_i*cos_i );
@@ -281,9 +281,6 @@ public:
         // These should be scaled by 2, because p == 1/2.
         // But we can't scale a BSDF.
         // Instead we probably should return a combination BSDF.
-
-        // Actually, this randomized thing somehow fucks things up completely, whereas
-        // returning consistently just reflection or transmission works.
         if (frand() < 0.5f) {
             return new SpecularReflection(R, new FresnelDielectric(1.0f, 1.3f));
         }
