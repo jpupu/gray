@@ -189,9 +189,9 @@ Scene* evaluate_scene (Value& description) {
     auto e = Evaluator();
     e.add_set(evaluate_linalg);
     e.add_set(evaluate_gray);
-    std::cout << description << std::endl;
+    // std::cout << description << std::endl;
     e.evaluate(description);
-    std::cout << description << std::endl;
+    // std::cout << description << std::endl;
 
     Scene* scene = new Scene();
     std::shared_ptr<ListAggregate> agg = std::make_shared<ListAggregate>();

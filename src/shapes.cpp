@@ -380,8 +380,8 @@ Mesh* load_ply (std::ifstream& ifs)
     // ifs.getline(buf, 256);
     // if (buf != std::string("format ascii 1.0")) throw std::runtime_error("ply: bad format");
 
-    std::cout << "vertex count " << vcount << std::endl;
-    std::cout << "face count " << fcount << std::endl;
+    // std::cout << "vertex count " << vcount << std::endl;
+    // std::cout << "face count " << fcount << std::endl;
 
     for (int i = 0; i < vcount; i++) {
         float x, y, z;
@@ -400,7 +400,7 @@ Mesh* load_ply (std::ifstream& ifs)
     M->root = BVHNode(M);
     for (int i = 0; i < fcount; i++) M->root.add(i);
     M->root.split();
-    std::cout << "FFF real count "<<fcount<<" counted "<<M->root.calc()<<"\n";
+    // std::cout << "FFF real count "<<fcount<<" counted "<<M->root.calc()<<"\n";
     // std::vector<int> counts(fcount, 0);
     // M->root.plot(counts);
     // for(int x : counts) {
