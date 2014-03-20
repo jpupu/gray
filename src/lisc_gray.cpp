@@ -43,19 +43,16 @@ void evaluate_xform (Value& val, List& args)
     val.reset({"_xform", new Transform(T)});
 }
 
-static
-std::vector<std::shared_ptr<Primitive>> primitive_pool;
 
 void evaluate_prim (Value& val, List& args)
 {
     auto* p = new GeometricPrimitive();
-    p->mat = pop_attr<Material>("_material", args).get();
-    p->shape = pop_attr<Shape>("_shape", args).get();
+    p->mat = pop_attr<Material>("_material", args);
+    p->shape = pop_attr<Shape>("_shape", args);
     p->world_from_prim = *pop_attr<Transform>("_xform", args);
     p->Le = *pop_attr<Spectrum>("emit", std::shared_ptr<Spectrum>(new Spectrum(0)), args);
 
     std::shared_ptr<Primitive> sh(dynamic_cast<Primitive*>(p));
-    primitive_pool.push_back(sh);
     val.reset({"_prim", sh});
 }
 

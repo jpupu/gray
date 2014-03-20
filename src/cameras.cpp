@@ -80,8 +80,6 @@ public:
 };
 
 
-static
-std::vector<std::shared_ptr<Camera>> cam_pool;
 
 void evaluate_camera (Value& val, List& args)
 {
@@ -109,6 +107,5 @@ void evaluate_camera (Value& val, List& args)
     }
 
     std::shared_ptr<Camera> sh(cam);
-    cam_pool.push_back(sh);
     val.reset({"_camera", sh});
 }

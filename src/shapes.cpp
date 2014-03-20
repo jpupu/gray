@@ -411,8 +411,6 @@ Mesh* load_ply (std::ifstream& ifs)
 
 
 
-static
-std::vector<std::shared_ptr<Shape>> shape_pool;
 
 void evaluate_shape (Value& val, List& args)
 {
@@ -457,6 +455,5 @@ void evaluate_shape (Value& val, List& args)
     }
 
     std::shared_ptr<Shape> sh(S);
-    shape_pool.push_back(sh);
     val.reset({"_shape", sh});
 }

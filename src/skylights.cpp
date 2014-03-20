@@ -66,8 +66,6 @@ public:
 
 
 
-static
-std::vector<std::shared_ptr<Skylight>> sky_pool;
 
 void evaluate_skylight (Value& val, List& args)
 {
@@ -86,6 +84,5 @@ void evaluate_skylight (Value& val, List& args)
     }
 
     std::shared_ptr<Skylight> sh(sky);
-    sky_pool.push_back(sh);
     val.reset({"_skylight", sh});
 }

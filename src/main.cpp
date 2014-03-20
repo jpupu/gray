@@ -31,12 +31,11 @@ class SimpleIntegrator : public SurfaceIntegrator
 {
     virtual Spectrum Li (const Ray& ray, const Isect& isect, const Scene* scene)
     {
-        BSDF* bsdf = isect.mat->get_bsdf(isect.p);
+        std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
         vec3 wi_t;
         Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
-        delete bsdf;
         vec3 wo = inverse(tangent_from_world).vector(wi_t);
         Spectrum L = f * (float)fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f;
         return L;
@@ -66,12 +65,11 @@ public:
     {
         rays++;
         // return Spectrum(isect.n*.5f+Spectrum(.5f));
-        BSDF* bsdf = isect.mat->get_bsdf(isect.p);
+        std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
         vec3 wi_t;
         Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
-        delete bsdf;
         if (f == Spectrum(0.0f)) {
             terminated++;
             return Spectrum(0.0f);
@@ -116,9 +114,9 @@ void render_block (Scene* scene, int spp,
 {
     srand(xofs+yofs*fullresx);
     Film& film = *filmp;
-    PathIntegrator* surf_integ = new PathIntegrator();
+    std::unique_ptr<PathIntegrator> surf_integ(new PathIntegrator());
 
-    Camera* cam = scene->camera;
+    Camera* cam = scene->camera.get();
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
@@ -196,14 +194,14 @@ Scene* evaluate_scene (Value& description) {
     std::cout << description << std::endl;
 
     Scene* scene = new Scene();
-    ListAggregate* agg = new ListAggregate();
+    std::shared_ptr<ListAggregate> agg = std::make_shared<ListAggregate>();
     std::shared_ptr<Primitive> p = nullptr;
     while ( (p = pop_attr<Primitive>("_prim", nullptr, description.list)) ) {
-        agg->add(p.get());
+        agg->add(p);
     }
     scene->primitives = agg;
-    scene->camera = pop_attr<Camera>("_camera", description.list).get();
-    scene->skylight = pop_attr<Skylight>("_skylight", description.list).get();
+    scene->camera = pop_attr<Camera>("_camera", description.list);
+    scene->skylight = pop_attr<Skylight>("_skylight", description.list);
     return scene;
 }
 
@@ -248,15 +246,18 @@ int main (int argc, char* argv[])
     }
 
 
+    std::cout << "baseline mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
 
-    Scene* scene = nullptr;
     try {
-        scene = load(input_filename);
+        std::unique_ptr<Scene> scene = nullptr;
+        scene.reset(load(input_filename));
+        // Scene* scene = nullptr;
+        // scene = load(input_filename);
 
         printf("Resolution: %d x %d\n", resx, resy);
         printf("Samples per pixel: %d\n", spp);
 
-        PathIntegrator* surf_integ = new PathIntegrator();
+        unique_ptr<PathIntegrator> surf_integ( new PathIntegrator() );
 
         int block_size = 32;
 
@@ -266,9 +267,12 @@ int main (int argc, char* argv[])
             for (int bx = 0; bx < (resx + block_size-1) / block_size; bx++) {
                 tasks.push_back(new RenderTask(bx, by, block_size,
                                 resx, resy, spp,
-                                scene));
+                                scene.get()));
+                                // scene));
             }
         }
+
+        std::cout << "pre-render mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
 
         std::list<RenderTask*> active;
         while (active.size() < thread_count && tasks.size() > 0) {
@@ -328,6 +332,13 @@ int main (int argc, char* argv[])
         return 1;
     }
 
+    std::cout << std::endl;
+    std::cout << "PEAK mem "<<get_peak_mem_usage()<<" bytes, peak allocations "<<get_peak_mem_allocs()<<"\n";
+    std::cout << std::endl;
+    std::cout << "TOTAL mem usage "<<get_total_mem_usage()<<" bytes in allocations "<<get_total_mem_allocs()<<"\n";
+    std::cout << "CURRENT mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
+    std::cout << "(5018, 5065)\n";
+    std::cout << "unfreed allocations "<<(100*get_mem_allocs()/get_total_mem_allocs())<<"%\n";
 
     return 0;
 }

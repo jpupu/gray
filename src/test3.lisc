@@ -54,15 +54,16 @@
     --(xform (scale 15) (translate <0 -1.4 0>))
     (xform (scale 15) (translate <0 0 0>))
     )
-(REM prim
-    (shape ply_mesh bun_zipper.ply)
-    (chalk)
-    --(xform (scale 15) (translate <0 -1.4 0>))
-    (xform (translate <0 -1.5 0>) (scale 15))
-    )
+--(REM prim
+--    (shape ply_mesh bun_zipper.ply)
+--    (chalk)
+--    --(xform (scale 15) (translate <0 -1.4 0>))
+--    (xform (translate <0 -1.5 0>) (scale 15))
+--    )
 (prim
     (shape sphere)
     (material glass (R (rgb .9 .9 1)))
+    --(chalk)
     (xform (translate <0 -0 0>) (scale 1))
     --(xform (translate <.8 -0.8 .6>) (scale .2))
     )
@@ -72,8 +73,8 @@
     (xform (translate {- a comment! -} <0 -1 0>))
     )
 
---(skylight solid (R (rgb .2)))
-(skylight probe (file ../all_probes/rnl_probe.hdr))
+(skylight solid (R (rgb .2)))
+--(skylight probe (file ../all_probes/rnl_probe.hdr))
 
 --(camera pinhole
 --    (xform (translate <0 0 6>))

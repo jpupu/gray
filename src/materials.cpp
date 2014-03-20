@@ -2,6 +2,8 @@
 #include "lisc.hpp"
 #include "gray.hpp"
 #include <memory>
+using std::unique_ptr;
+using std::make_shared;
 
 /** Calculate dielectric fresnel reflectance F_r. Note that each wavelength
  * in the spectrum may have its own index of refraction.
@@ -116,9 +118,10 @@ class SpecularReflection : public BSDF
 {
 public:
     Spectrum R;
-    Fresnel* fresnel;
+    // TODO: shared_ptr might be a bit overkill here...
+    shared_ptr<Fresnel> fresnel;
 
-    SpecularReflection (const Spectrum& R, Fresnel* f)
+    SpecularReflection (const Spectrum& R, const shared_ptr<Fresnel>& f)
         : R(R), fresnel(f)
     { }
 
@@ -134,9 +137,9 @@ class SpecularTransmission : public BSDF
 public:
     // transmission scale factor
     Spectrum T;
-    FresnelDielectric* fresnel;
+    shared_ptr<FresnelDielectric> fresnel;
 
-    SpecularTransmission (const Spectrum& T, FresnelDielectric* f)
+    SpecularTransmission (const Spectrum& T, shared_ptr<FresnelDielectric> f)
         : T(T), fresnel(f)
     { }
 
@@ -192,7 +195,7 @@ public:
 void ttt()
 {
     FresnelDielectric fr(1.0, 1.3);
-    SpecularTransmission sp(Spectrum(1.0f), &fr);
+    SpecularTransmission sp(Spectrum(1.0f), shared_ptr<FresnelDielectric>(&fr));
     vec3 wo, wi;
     Spectrum l;
     wo = normalize(vec3(1,0,1));
@@ -243,10 +246,10 @@ public:
 
     Spectrum R;
 
-    virtual BSDF* get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
         Spectrum r = R;//Checkers3D(R, R*0.3f).sample(vec2(0,0), p);
-        return new Lambertian(r);
+        return unique_ptr<BSDF>(new Lambertian(r));
     }
 
 };
@@ -260,9 +263,9 @@ public:
 
     Spectrum R;
 
-    virtual BSDF* get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        return new SpecularReflection(R, new FresnelDielectric(1.0f, 1.3f));
+        return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
     }
 
 };
@@ -276,16 +279,16 @@ public:
 
     Spectrum R;
 
-    virtual BSDF* get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
         // These should be scaled by 2, because p == 1/2.
         // But we can't scale a BSDF.
         // Instead we probably should return a combination BSDF.
         if (frand() < 0.5f) {
-            return new SpecularReflection(R, new FresnelDielectric(1.0f, 1.3f));
+            return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
         else {
-            return new SpecularTransmission(R, new FresnelDielectric(1.0f, 1.3f));
+            return unique_ptr<BSDF>(new SpecularTransmission(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
     }
 
@@ -293,8 +296,6 @@ public:
 
 
 
-static
-std::vector<std::shared_ptr<Material>> material_pool;
 
 void evaluate_material (Value& val, List& args)
 {
@@ -317,7 +318,6 @@ void evaluate_material (Value& val, List& args)
     }
 
     std::shared_ptr<Material> sh(M);
-    material_pool.push_back(sh);
     val.reset({"_material", sh});
 }
 

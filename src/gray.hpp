@@ -1,9 +1,14 @@
 #ifndef GRAY_HPP
 #define GRAY_HPP
 
+#include <memory>
+using std::unique_ptr;
+using std::shared_ptr;
+using std::make_shared;
 #include "mymath.hpp"
 #include <vector>
 #include "Transform.hpp"
+
 
 typedef vec3 Spectrum;
 
@@ -61,7 +66,7 @@ class Material
 {
 public:
     virtual ~Material () {}
-    virtual BSDF* get_bsdf (const vec3& p) const = 0;
+    virtual std::unique_ptr<BSDF> get_bsdf (const vec3& p) const = 0;
 };
 
 class Primitive
@@ -76,9 +81,9 @@ public:
 class ListAggregate : public Primitive
 {
 public:
-    std::vector<const Primitive*> prims;
+    std::vector<std::shared_ptr<const Primitive>> prims;
 
-    void add (const Primitive* p)
+    void add (std::shared_ptr<const Primitive> p)
     {
         prims.push_back(p);
     }
@@ -86,7 +91,7 @@ public:
     bool intersect (Ray& r, Isect* isect) const
     {
         bool hit = false;
-        for (const Primitive* prim : prims) {
+        for (auto& prim : prims) {
             hit |= prim->intersect(r, isect);
         }
         return hit;
@@ -96,8 +101,8 @@ public:
 class GeometricPrimitive : public Primitive
 {
 public:
-    Material* mat;
-    Shape* shape;
+    shared_ptr<Material> mat;
+    shared_ptr<Shape> shape;
     Transform world_from_prim;
     mutable Transform prim_from_world;
     Spectrum Le;
@@ -114,7 +119,7 @@ public:
         r.tmax = ro.tmax;
         isect->p = world_from_prim.point(isect->p);
         isect->n = normalize(world_from_prim.normal(isect->n));
-        isect->mat = mat;
+        isect->mat = mat.get();
         isect->Le = Le;
         return true;
     }
@@ -172,9 +177,9 @@ public:
 class Scene
 {
 public:
-    Primitive* primitives;
-    Camera* camera;
-    Skylight* skylight;
+    shared_ptr<Primitive> primitives;
+    shared_ptr<Camera> camera;
+    shared_ptr<Skylight> skylight;
 
     bool intersect (Ray& ray, Isect* isect) const
     {

@@ -12,8 +12,12 @@ void __real_free(void* ptr);
 void* __real_realloc(void* oldptr, size_t size);
 
 static std::mutex mtx;
-static size_t mem_usage;
-static size_t peak_mem_usage;
+static size_t mem_usage = 0;
+static size_t peak_mem_usage = 0;
+static size_t total_mem_usage = 0;
+static size_t allocs = 0;
+static size_t peak_allocs = 0;
+static size_t total_allocs = 0;
 static size_t mem_limit = 100 * 1024*1024;
 
 void* __wrap_malloc(size_t size)
@@ -27,10 +31,15 @@ void* __wrap_malloc(size_t size)
     }
 
     mem_usage += size+16;
-
+    total_mem_usage += size+16;
+    
     if (peak_mem_usage < mem_usage) {
         peak_mem_usage = mem_usage;
     }
+
+    allocs++;
+    if (peak_allocs < allocs) peak_allocs = allocs;
+    total_allocs++;
 
     void* p = __real_malloc(size+16);
     *(size_t*)p = size;
@@ -54,10 +63,15 @@ void* __wrap_calloc(size_t num, size_t elsize)
     }
 
     mem_usage += size+16;
+    total_mem_usage += size+16;
 
     if (peak_mem_usage < mem_usage) {
         peak_mem_usage = mem_usage;
     }
+
+    allocs++;
+    if (peak_allocs < allocs) peak_allocs = allocs;
+    total_allocs++;
 
     void* p = __real_calloc(size+16, 1);
     *(size_t*)p = size;
@@ -103,6 +117,7 @@ void __wrap_free(void* ptr)
     void* p = (char*)ptr-16;
     size_t s = *(size_t*)p;
     mem_usage -= s;
+    allocs--;
 #ifdef DEBUG_MALLOC
     printf("free %lld bytes at %p, usage %lld\n", s, (char*)p+16, mem_usage);
 #endif
@@ -154,4 +169,24 @@ size_t get_mem_usage ()
 size_t get_peak_mem_usage ()
 {
     return peak_mem_usage;
+}
+
+size_t get_total_mem_usage ()
+{
+    return total_mem_usage;
+}
+
+size_t get_mem_allocs ()
+{
+    return allocs;
+}
+
+size_t get_peak_mem_allocs ()
+{
+    return peak_allocs;
+}
+
+size_t get_total_mem_allocs ()
+{
+    return total_allocs;
 }
