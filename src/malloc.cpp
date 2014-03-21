@@ -45,7 +45,7 @@ void* __wrap_malloc(size_t size)
     *(size_t*)p = size;
 
 #ifdef DEBUG_MALLOC
-    printf("alloc %lld bytes at %p, usage %lld\n", size, (char*)p+16, mem_usage);
+    printf("MALLOC: %p : %lld malloc\n", (char*)p+16, size);
 #endif
 
     return (char*)p+16;
@@ -77,7 +77,7 @@ void* __wrap_calloc(size_t num, size_t elsize)
     *(size_t*)p = size;
 
 #ifdef DEBUG_MALLOC
-    printf("calloc %lld bytes at %p, usage %lld\n", size, (char*)p+16, mem_usage);
+    printf("MALLOC: %p : %lld calloc\n", (char*)p+16, size);
 #endif
 
     return (char*)p+16;
@@ -90,12 +90,11 @@ void* __wrap_realloc(void* oldptr, size_t size)
     std::lock_guard<std::mutex> lck (mtx);
     void* p = (char*)oldptr-16;
 
-#ifdef DEBUG_MALLOC
-    printf("realloc %lld bytes at %p, usage %lld\n", size, (char*)oldptr, mem_usage);
-#endif
-
     void* new_p = __real_realloc(p, size);
     if (new_p == nullptr) {
+#ifdef DEBUG_MALLOC
+        printf("MALLOC: %p : %lld realloc\n", (char*)oldptr, size);
+#endif
         return nullptr;
     }
 
@@ -106,12 +105,21 @@ void* __wrap_realloc(void* oldptr, size_t size)
         *(size_t*)new_p = size;
     }
 
+#ifdef DEBUG_MALLOC
+    printf("MALLOC: %p : %lld realloc %lld\n", (char*)oldptr, size, old_size);
+#endif
+
     return (char*)new_p + 16;
 }
 
 void __wrap_free(void* ptr)
 {
-    if (ptr == nullptr) return;
+    if (ptr == nullptr) {
+#ifdef DEBUG_MALLOC
+        printf("MALLOC: %p free\n", ptr);
+#endif
+        return;
+    }
 
     std::lock_guard<std::mutex> lck (mtx);
     void* p = (char*)ptr-16;
@@ -119,7 +127,7 @@ void __wrap_free(void* ptr)
     mem_usage -= s;
     allocs--;
 #ifdef DEBUG_MALLOC
-    printf("free %lld bytes at %p, usage %lld\n", s, (char*)p+16, mem_usage);
+    printf("MALLOC: %p : %lld free\n", (char*)p+16, s);
 #endif
     __real_free(p);
 }
