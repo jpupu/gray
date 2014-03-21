@@ -124,7 +124,7 @@ void __wrap_free(void* ptr)
     std::lock_guard<std::mutex> lck (mtx);
     void* p = (char*)ptr-16;
     size_t s = *(size_t*)p;
-    mem_usage -= s;
+    mem_usage -= s+16;
     allocs--;
 #ifdef DEBUG_MALLOC
     printf("MALLOC: %p : %lld free\n", (char*)p+16, s);
