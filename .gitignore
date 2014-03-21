@@ -5,3 +5,5 @@ a.out
 out.float
 out.hdr
 *.sublime-*
+models/*
+all_probes/*
