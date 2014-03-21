@@ -294,7 +294,7 @@ int main (int argc, char* argv[])
                 active.push_back(t);
             }
 
-            std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes)\n";
+            std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes) in allocations "<<get_mem_allocs()<<"\n";
         }
 
 
