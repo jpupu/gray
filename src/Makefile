@@ -2,9 +2,14 @@ LANG=en
 
 CC= gcc
 
+WRAP_MALLOC=1
+
 CXXFLAGS = -O3 -pedantic -Wall -g -ggdb --std=c++11
-CXXFLAGS += -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
-CFLAGS += -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
+
+ifdef WRAP_MALLOC
+	CXXFLAGS += -DWRAP_MALLOC -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
+	CFLAGS += -DWRAP_MALLOC -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc
+endif
 
 INCLUDE = -I../../glm-0.9.4.1/
 

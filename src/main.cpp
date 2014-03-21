@@ -294,7 +294,9 @@ int main (int argc, char* argv[])
                 active.push_back(t);
             }
 
+#ifdef WRAP_MALLOC
             std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes) in allocations "<<get_mem_allocs()<<"\n";
+#endif
         }
 
 
@@ -332,13 +334,14 @@ int main (int argc, char* argv[])
         return 1;
     }
 
+#ifdef WRAP_MALLOC
     std::cout << std::endl;
     std::cout << "PEAK mem "<<get_peak_mem_usage()<<" bytes, peak allocations "<<get_peak_mem_allocs()<<"\n";
     std::cout << std::endl;
     std::cout << "TOTAL mem usage "<<get_total_mem_usage()<<" bytes in allocations "<<get_total_mem_allocs()<<"\n";
     std::cout << "CURRENT mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
-    std::cout << "(5018, 5065)\n";
     std::cout << "unfreed allocations "<<(100*get_mem_allocs()/get_total_mem_allocs())<<"%\n";
+#endif
 
     return 0;
 }

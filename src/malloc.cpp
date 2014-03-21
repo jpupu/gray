@@ -4,13 +4,6 @@
 
 #undef DEBUG_MALLOC
 
-extern "C" {
-
-void *__real_malloc(size_t);
-void *__real_calloc(size_t,size_t);
-void __real_free(void* ptr);
-void* __real_realloc(void* oldptr, size_t size);
-
 static std::mutex mtx;
 static size_t mem_usage = 0;
 static size_t peak_mem_usage = 0;
@@ -19,6 +12,16 @@ static size_t allocs = 0;
 static size_t peak_allocs = 0;
 static size_t total_allocs = 0;
 static size_t mem_limit = 100 * 1024*1024;
+
+#ifdef WRAP_MALLOC
+
+extern "C" {
+
+void *__real_malloc(size_t);
+void *__real_calloc(size_t,size_t);
+void __real_free(void* ptr);
+void* __real_realloc(void* oldptr, size_t size);
+
 
 void* __wrap_malloc(size_t size)
 {
@@ -158,6 +161,9 @@ void operator delete[ ] (void* arrayToDelete) noexcept
 {
     free(arrayToDelete);
 }
+
+#endif // WRAP_MALLOC
+
 
 void set_mem_limit (size_t limit)
 {
