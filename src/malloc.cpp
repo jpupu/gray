@@ -1,17 +1,16 @@
 #include <cstdio>
 #include <thread>
-#include <mutex>
+#include <atomic>
 
 #undef DEBUG_MALLOC
 
-static std::mutex mtx;
-static size_t mem_usage = 0;
-static size_t peak_mem_usage = 0;
-static size_t total_mem_usage = 0;
-static size_t allocs = 0;
-static size_t peak_allocs = 0;
-static size_t total_allocs = 0;
-static size_t mem_limit = 100 * 1024*1024;
+static std::atomic_size_t mem_usage(0);
+static std::atomic_size_t peak_mem_usage(0);
+static std::atomic_size_t total_mem_usage(0);
+static std::atomic_size_t allocs(0);
+static std::atomic_size_t peak_allocs(0);
+static std::atomic_size_t total_allocs(0);
+static std::atomic_size_t mem_limit(100 * 1024*1024);
 
 #ifdef WRAP_MALLOC
 
@@ -25,10 +24,8 @@ void* __real_realloc(void* oldptr, size_t size);
 
 void* __wrap_malloc(size_t size)
 {
-    std::lock_guard<std::mutex> lck (mtx);
-
     if (mem_usage + size+16 > mem_limit) {
-        printf("\ntrying to allocate %lld bytes when usage already %lld bytes", size+16, mem_usage);
+        printf("\ntrying to allocate %lld bytes when usage already %lld bytes", size+16, mem_usage.load());
         printf("\nmemory limit hit!\n\n");
         return nullptr;
     }
@@ -36,12 +33,12 @@ void* __wrap_malloc(size_t size)
     mem_usage += size+16;
     total_mem_usage += size+16;
     
-    if (peak_mem_usage < mem_usage) {
-        peak_mem_usage = mem_usage;
-    }
+    // if (peak_mem_usage < mem_usage) {
+    //     peak_mem_usage = mem_usage;
+    // }
 
     allocs++;
-    if (peak_allocs < allocs) peak_allocs = allocs;
+    // if (peak_allocs < allocs) peak_allocs = allocs;
     total_allocs++;
 
     void* p = __real_malloc(size+16);
@@ -56,11 +53,10 @@ void* __wrap_malloc(size_t size)
 
 void* __wrap_calloc(size_t num, size_t elsize)
 {
-    std::lock_guard<std::mutex> lck (mtx);
     size_t size = num*elsize;
 
     if (mem_usage + size+16 > mem_limit) {
-        printf("\ntrying to allocate %lld bytes when usage already %lld bytes", size+16, mem_usage);
+        printf("\ntrying to allocate %lld bytes when usage already %lld bytes", size+16, mem_usage.load());
         printf("\nmemory limit hit!\n\n");
         return nullptr;
     }
@@ -68,12 +64,12 @@ void* __wrap_calloc(size_t num, size_t elsize)
     mem_usage += size+16;
     total_mem_usage += size+16;
 
-    if (peak_mem_usage < mem_usage) {
-        peak_mem_usage = mem_usage;
-    }
+    // if (peak_mem_usage < mem_usage) {
+    //     peak_mem_usage = mem_usage;
+    // }
 
     allocs++;
-    if (peak_allocs < allocs) peak_allocs = allocs;
+    // if (peak_allocs < allocs) peak_allocs = allocs;
     total_allocs++;
 
     void* p = __real_calloc(size+16, 1);
@@ -90,7 +86,6 @@ void* __wrap_realloc(void* oldptr, size_t size)
 {
     if (oldptr == nullptr) return malloc(size);
     
-    std::lock_guard<std::mutex> lck (mtx);
     void* p = (char*)oldptr-16;
 
     void* new_p = __real_realloc(p, size);
@@ -124,7 +119,6 @@ void __wrap_free(void* ptr)
         return;
     }
 
-    std::lock_guard<std::mutex> lck (mtx);
     void* p = (char*)ptr-16;
     size_t s = *(size_t*)p;
     mem_usage -= s+16;
