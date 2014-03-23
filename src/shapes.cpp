@@ -134,7 +134,19 @@ class Mesh : public Shape
 {
 public:
     std::vector<vec3> vertices;
+    std::vector<vec3> normals;
     std::vector<int> vertex_indices;
+    bool smooth;
+
+    vec3& vertex (int face, int v)
+    {
+        return vertices[vertex_indices[face*3+v]];
+    }
+
+    vec3& normal (int face, int v)
+    {
+        return normals[vertex_indices[face*3+v]];
+    }
 
     virtual bool intersect (Ray& ray, Isect* isect)
     {
@@ -147,9 +159,9 @@ public:
 
     bool intersect_triangle (int triangle, Ray& ray, Isect* isect)
     {
-        const vec3& vert0 = vertices[vertex_indices[triangle*3+0]];
-        const vec3& vert1 = vertices[vertex_indices[triangle*3+1]];
-        const vec3& vert2 = vertices[vertex_indices[triangle*3+2]];
+        const vec3& vert0 = vertex(triangle, 0);
+        const vec3& vert1 = vertex(triangle, 1);
+        const vec3& vert2 = vertex(triangle, 2);
 
         // constexpr float EPSILON = 1e-8f;
         vec3 e1 = vert1 - vert0;
@@ -182,9 +194,37 @@ public:
         // Hit.
         ray.tmax = t;
         isect->p = ray.o + t * ray.d;
-        isect->n = normalize(cross(e1, e2));
+        if (smooth) {
+            const vec3& n0 = normal(triangle, 0);
+            const vec3& n1 = normal(triangle, 1);
+            const vec3& n2 = normal(triangle, 2);
+            vec3 n = n0 * (1-u-v) + n1 * u + n2 * v;
+            isect->n = normalize(n);
+        }
+        else {
+            isect->n = normalize(cross(e1, e2));
+        }
 
         return true;
+    }
+
+    void calculate_smooth_normals ()
+    {
+        normals.clear();
+        normals.resize(vertices.size(), vec3(0.0f));
+        for (size_t face = 0; face < vertex_indices.size() / 3; face++) {
+            vec3 n = normalize(cross(vertex(face,1) - vertex(face,0),
+                                     vertex(face,2) - vertex(face,0)));
+            for (int i = 0; i < 3; i++) {
+                vec3 e1 = normalize(vertex(face, (i+1)%3) - vertex(face, i));
+                vec3 e2 = normalize(vertex(face, (i+2)%3) - vertex(face, i));
+                float w = acos(dot(e1, e2));
+                normal(face,i) += n;
+            }
+        }
+        for (size_t i = 0; i < normals.size(); i++) {
+            normals[i] = normalize(normals[i]);
+        }
     }
 };
 
@@ -396,6 +436,9 @@ Mesh* load_ply (std::ifstream& ifs)
         M->vertex_indices.push_back(b);
         M->vertex_indices.push_back(c);
     }
+
+    M->smooth = true;
+    M->calculate_smooth_normals();
 
     M->root = BVHNode(M);
     for (int i = 0; i < fcount; i++) M->root.add(i);
