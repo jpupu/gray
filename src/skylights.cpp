@@ -19,6 +19,21 @@ public:
     }
 };
 
+class CosineSkylight : public Skylight
+{
+public:
+    Spectrum R;
+
+    CosineSkylight (const Spectrum& R)
+        : R(R)
+    { }
+
+    Spectrum sample (const vec3& dir) const
+    {
+        return R * std::max(0.0f, dir.y*dir.y*dir.y);
+    }
+};
+
 class DebevecSkylight : public Skylight
 {
 public:
@@ -74,6 +89,10 @@ void evaluate_skylight (Value& val, List& args)
     if (name == "solid") {
         auto R = *pop_attr<Spectrum>("R", args);
         sky = new SolidSkylight(R);
+    }
+    else if (name == "cosine") {
+        auto R = *pop_attr<Spectrum>("R", args);
+        sky = new CosineSkylight(R);
     }
     else if (name == "probe") {
         auto file = *pop_attr<std::string>("file", args);
