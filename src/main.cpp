@@ -35,9 +35,10 @@ class SimpleIntegrator : public SurfaceIntegrator
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
         vec3 wi_t;
-        Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
+        float pdf;
+        Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()), &pdf);
         vec3 wo = inverse(tangent_from_world).vector(wi_t);
-        Spectrum L = f * (float)fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f;
+        Spectrum L = f * (float)fmax(dot(wo, normalize(vec3(-10,7,3))), 0.f) * 10.0f / pdf;
         return L;
     }
 };
@@ -69,7 +70,8 @@ public:
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
         vec3 wi_t;
-        Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()));
+        float pdf;
+        Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()), &pdf);
         if (f == Spectrum(0.0f)) {
             terminated++;
             return Spectrum(0.0f);
@@ -98,7 +100,7 @@ public:
         Li /= russian_p;
 
         // Light transport equation.
-        Spectrum L = isect.Le + f * Li * abs_cos_theta(wi_t);
+        Spectrum L = isect.Le + f * Li * abs_cos_theta(wi_t) / pdf;
         return L;
     }
 };

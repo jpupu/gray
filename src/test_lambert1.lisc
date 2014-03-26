@@ -1,0 +1,20 @@
+-- Totally reflective and diffuse rectangles in a uniformly lit space.
+-- Should appear as solid white.
+
+(prim
+    (shape rectangle)
+    (material diffuse (R (rgb 1 1 1)))
+    (xform (rotate 90 <1 0 0>)))
+
+(prim
+    (shape rectangle)
+    (material diffuse (R (rgb 1 1 1)))
+    (xform (translate <0 -1 0>)))
+
+(skylight solid (R (rgb 1)))
+(camera thinlens
+    (xform (translate <0 0 4>) (rotate -0 <1 0 0>))
+    (focal_length 50)
+    (focus_distance 10)
+    (f_number 0.8)
+    (size <36 36>))

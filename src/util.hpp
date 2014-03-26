@@ -102,13 +102,19 @@ Transform build_tangent_from_world (const vec3& normal)
  */
 
 inline
-vec3 sample_hemisphere (const vec2& uv)
+vec3 uniform_sample_hemisphere (const vec2& uv)
 {
     float z = uv[0];
     float r = sqrtf(1.0f - z*z);
     float phi = uv[1] * M_2PI;
 
     return vec3(cos(phi)*r, sin(phi)*r, z);
+}
+
+inline
+float uniform_hemisphere_pdf ()
+{
+    return 1.0f / M_2PI;
 }
 
 

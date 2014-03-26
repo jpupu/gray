@@ -94,10 +94,11 @@ public:
     /// reflectance
     Spectrum rho;
 
-    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
     {
-        *wi = sample_hemisphere(uv);
-        return rho / (float)M_PI; // i still don't get why it's pi and not 2pi...
+        *wi = uniform_sample_hemisphere(uv);
+        *pdf = uniform_hemisphere_pdf();
+        return rho / (float)M_PI;
     }
 };
 
@@ -107,9 +108,10 @@ public:
     Specular (const Spectrum& rho) : rho(rho) {}
     Spectrum rho;
 
-    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
     {
         *wi = vec3(-wo.x, -wo.y, wo.z);
+        *pdf = 1;
         return rho;
     }
 };
@@ -125,9 +127,10 @@ public:
         : R(R), fresnel(f)
     { }
 
-    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
     {
         *wi = vec3(-wo.x, -wo.y, wo.z);
+        *pdf = 1;
         return (*fresnel)(cos_theta(wo)) * R / abs_cos_theta(*wi);
     }
 };
@@ -143,8 +146,10 @@ public:
         : T(T), fresnel(f)
     { }
 
-    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
     {
+        *pdf = 1;
+
         float cos_o = cos_theta(wo);
         float eo = fresnel->eta_i;
         float ei = fresnel->eta_t;
@@ -192,26 +197,26 @@ public:
     }
 };
 
-void ttt()
-{
-    FresnelDielectric fr(1.0, 1.3);
-    SpecularTransmission sp(Spectrum(1.0f), shared_ptr<FresnelDielectric>(&fr));
-    vec3 wo, wi;
-    Spectrum l;
-    wo = normalize(vec3(1,0,1));
-    l = sp.sample(wo, &wi, vec2(0,0));
-    printf("enter:\n");
-    printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
-    printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
-    printf("l = %f %f %f\n", l.x,l.y,l.z);
+// void ttt()
+// {
+//     FresnelDielectric fr(1.0, 1.3);
+//     SpecularTransmission sp(Spectrum(1.0f), shared_ptr<FresnelDielectric>(&fr));
+//     vec3 wo, wi;
+//     Spectrum l;
+//     wo = normalize(vec3(1,0,1));
+//     l = sp.sample(wo, &wi, vec2(0,0));
+//     printf("enter:\n");
+//     printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
+//     printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
+//     printf("l = %f %f %f\n", l.x,l.y,l.z);
 
-    wo = normalize(vec3(1,0,-1));
-    l = sp.sample(wo, &wi, vec2(0,0));
-    printf("exit:\n");
-    printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
-    printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
-    printf("l = %f %f %f\n", l.x,l.y,l.z);
-}
+//     wo = normalize(vec3(1,0,-1));
+//     l = sp.sample(wo, &wi, vec2(0,0));
+//     printf("exit:\n");
+//     printf("wo %f %f %f\n", wo.x, wo.y, wo.z);
+//     printf("wi %f %f %f\n", wi.x, wi.y, wi.z);
+//     printf("l = %f %f %f\n", l.x,l.y,l.z);
+// }
 
 
 class Texture
@@ -229,7 +234,7 @@ public:
 
     Spectrum sample (const vec2& uv, const vec3& p) const
     {
-        vec3 pp = p * 5.0f;
+        vec3 pp = p * 2.0f - vec3(1000,1000,1000);
         return (((int)floor(pp.x) ^ (int)floor(pp.y) ^ (int)floor(pp.z)) & 1) ? A : B;
     }
 
@@ -248,7 +253,7 @@ public:
 
     virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        Spectrum r = R;//Checkers3D(R, R*0.3f).sample(vec2(0,0), p);
+        Spectrum r = Checkers3D(R, Spectrum(1)).sample(vec2(0,0), p);
         return unique_ptr<BSDF>(new Lambertian(r));
     }
 

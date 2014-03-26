@@ -58,7 +58,7 @@ public:
     /// @param wo [in]  exiting vector in tangent space, normalized
     /// @param wi [out] entering vector in tangent space, normalized
     /// @return reflectance f(wo,wi)
-    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv) const = 0;
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const = 0;
 };
 
 
