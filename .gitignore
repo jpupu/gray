@@ -1,4 +1,5 @@
 a.out
+*.d
 *.png
 *.jpg
 *.rgbe

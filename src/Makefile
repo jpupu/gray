@@ -15,17 +15,24 @@ INCLUDE = -I../../glm-0.9.4.1/
 
 CXXFLAGS += $(INCLUDE)
 
-OBJS = main.o film.o shapes.o materials.o cameras.o skylights.o rgbe.o lodepng.o lisc_gray.o lisc_linalg.o lisc.o malloc.o trex/trex.o
+OBJS = main.o film.o shapes.o materials.o cameras.o skylights.o \
+	lisc_gray.o lisc_linalg.o lisc.o malloc.o \
+	rgbe.o lodepng.o trex/trex.o
 
 .PHONY: run clean
 
 default: gray.exe
 
+%.o: %.cpp
+	$(CC) -MMD -c -o $@ $< $(CXXFLAGS)
+
+-include *.d
+
 run: gray
 	./gray.exe
 
 clean:
-	rm gray.exe $(OBJS)
+	rm -f gray.exe $(OBJS)
 
 gray.exe: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o gray.exe $(OBJS)
