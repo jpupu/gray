@@ -270,7 +270,8 @@ public:
 
     virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
+        // return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
+        return unique_ptr<BSDF>(new Specular(R));
     }
 
 };
@@ -289,11 +290,12 @@ public:
         // These should be scaled by 2, because p == 1/2.
         // But we can't scale a BSDF.
         // Instead we probably should return a combination BSDF.
+        // Well, I guess we can scale the R.
         if (frand() < 0.5f) {
-            return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
+            return unique_ptr<BSDF>(new SpecularReflection(2.0f*R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
         else {
-            return unique_ptr<BSDF>(new SpecularTransmission(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
+            return unique_ptr<BSDF>(new SpecularTransmission(2.0f*R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
     }
 
