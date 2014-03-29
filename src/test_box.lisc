@@ -1,0 +1,27 @@
+
+(def white (rgb .9 .9 .9))
+
+(prim
+    (shape box)
+    (material diffuse (R (white)))
+    (xform (scale 1)))
+
+(prim
+    (shape plane)
+    (material diffuse (R <.8 .3 .3>))
+    (xform (translate <0 -1.01 0>)))
+
+(prim
+    (shape sphere)
+    (material diffuse (R (white)))
+    (emit (rgb 10))
+    (xform (translate <-2 3 2>)  (scale .7)))
+
+(skylight solid (R (rgb .05 .1 .2)))
+
+(camera thinlens
+    (xform (rotate 30 <0 1 0>) (rotate -40 <1 0 0>) (translate <0 0 8>) )
+    (focal_length 55)
+    (focus_distance 7.5)
+    (f_number 2.8)
+    (size <36 36>))

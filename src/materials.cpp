@@ -253,7 +253,7 @@ public:
 
     virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        Spectrum r = Checkers3D(R, Spectrum(1)).sample(vec2(0,0), p);
+        Spectrum r = R;//Checkers3D(R, Spectrum(1)).sample(vec2(0,0), p);
         return unique_ptr<BSDF>(new Lambertian(r));
     }
 

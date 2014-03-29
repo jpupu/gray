@@ -83,6 +83,72 @@ public:
 };
 
 
+class Box : public Shape
+{
+public:
+    bool intersect (Ray& ray, Isect* isect)
+    {
+        // float tt[7];
+        // for (int k = 0; k < 3; k++) {
+        //     tt[k*2+0] = (-1 - ray.o[k]) / ray.d[k];
+        //     tt[k*2+1] = (1 - ray.o[k]) / ray.d[k];
+        // }
+        // tt[6] = ray.tmax;
+        // int ii = 6;
+        // for (int i = 0; i < 6; i++) {
+        //     if (tt[i] < tt[ii] && tt[i] >= ray.tmin) ii = i;
+        // }
+        // if (ii == 6) return false;
+
+        // ray.tmax = tt[ii];
+        // isect->p = ray.o + ray.d * tt[ii];
+        // switch (ii) {
+        //     case 0: isect->n = vec3(-1, 0, 0); break;
+        //     case 1: isect->n = vec3( 1, 0, 0); break;
+        //     case 2: isect->n = vec3( 0,-1, 0); break;
+        //     case 3: isect->n = vec3( 0, 1, 0); break;
+        //     case 4: isect->n = vec3( 0, 0,-1); break;
+        //     case 5: isect->n = vec3( 0, 0, 1); break;
+        // }
+        // return true;
+
+
+        // http://www.scratchapixel.com/lessons/3d-basic-lessons/lesson-7-intersecting-simple-shapes/ray-box-intersection/
+        
+        float tmin = (-1 - ray.o.x) / ray.d.x;
+        float tmax = (1 - ray.o.x) / ray.d.x;
+        if (tmin > tmax) std::swap(tmin, tmax);
+        float tymin = (-1 - ray.o.y) / ray.d.y;
+        float tymax = (1 - ray.o.y) / ray.d.y;
+        if (tymin > tymax) std::swap(tymin, tymax);
+        if ((tmin > tymax) || (tymin > tmax)) return false;
+        if (tymin > tmin) tmin = tymin;
+        if (tymax < tmax) tmax = tymax;
+        float tzmin = (-1 - ray.o.z) / ray.d.z;
+        float tzmax = (1 - ray.o.z) / ray.d.z;
+        if (tzmin > tzmax) std::swap(tzmin, tzmax);
+        if ((tmin > tzmax) || (tzmin > tmax)) return false;
+        if (tzmin > tmin) tmin = tzmin;
+        if (tzmax < tmax) tmax = tzmax;
+        if ((tmin > ray.tmax) || (tmax < ray.tmin)) return false;
+
+        float t = tmin;
+        if (tmin < ray.tmin) t = tmax;
+
+        ray.tmax = t;
+        isect->p = ray.o + ray.d * t;
+        int k = abs_max_elem(isect->p);
+        isect->n = vec3(0.0f);
+        isect->n[k] = (isect->p[k] < 0) ? -1.0f : 1.0f;
+        // if (ray.tmin < tmin) ray.tmin = tmin;
+        // if (ray.tmax > tmax) ray.tmax = tmax;
+        return true;
+
+
+    }
+};
+
+
 class Triangle : public Shape
 {
 public:
@@ -467,6 +533,9 @@ void evaluate_shape (Value& val, List& args)
     }
     else if (name == "rectangle") {
         S = new Rectangle();
+    }
+    else if (name == "box") {
+        S = new Box();
     }
     else if (name == "triangle") {
         auto* t = new Triangle();
