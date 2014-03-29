@@ -18,6 +18,13 @@ public:
         d = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0);
     }
 
+    float snap ()
+    {
+        std::chrono::high_resolution_clock::time_point t = std::chrono::high_resolution_clock::now();
+        d = std::chrono::duration_cast<std::chrono::duration<double>>(t - t0);
+        return d.count();
+    }
+
     float seconds () const
     {
         return d.count();

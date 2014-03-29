@@ -66,7 +66,7 @@ public:
     virtual Spectrum Li (const Ray& ray, const Isect& isect, const Scene* scene)
     {
         rays++;
-        return Spectrum(isect.n*.5f+Spectrum(.5f));
+        // return Spectrum(isect.n*.5f+Spectrum(.5f));
         std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
@@ -279,12 +279,14 @@ int main (int argc, char* argv[])
                                 // scene));
             }
         }
+        std::random_shuffle(tasks.begin(), tasks.end());
 
 #ifdef DEBUG_MALLOC
         std::cout << "pre-render mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
 #endif
 
         Timer render_timer;
+        Timer preview_timer;
         render_timer.start();
 
         std::list<RenderTask*> active;
@@ -311,6 +313,14 @@ int main (int argc, char* argv[])
 
             ++completed_tasks;
             std::cout << "completed: " << completed_tasks << " / " << total_tasks << "\r";
+
+            if (preview_timer.snap() > 2.0) {
+                char filename[256];
+                sprintf(filename, "%s.hdr", output_filename);
+                wholefilm.save_rgbe(filename);
+                preview_timer.start();
+            }
+
 
 #ifdef DEBUG_MALLOC
             std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes) in allocations "<<get_mem_allocs()<<"\n";
