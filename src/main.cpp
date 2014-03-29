@@ -5,6 +5,7 @@
 #include <cstring>
 #include <thread>
 #include <list>
+#include "timer.hpp"
 #include "malloc.hpp"
 
 class Texture
@@ -65,7 +66,7 @@ public:
     virtual Spectrum Li (const Ray& ray, const Isect& isect, const Scene* scene)
     {
         rays++;
-        // return Spectrum(isect.n*.5f+Spectrum(.5f));
+        return Spectrum(isect.n*.5f+Spectrum(.5f));
         std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p);
         Transform tangent_from_world = build_tangent_from_world(isect.n);
         vec3 wo_t = tangent_from_world.vector(-ray.d);
@@ -173,7 +174,7 @@ public:
 
     void start ()
     {
-        printf("Block %d,%d (%dx%d)\n", bx, by, blw, blh);
+        // printf("Block %d,%d (%dx%d)\n", bx, by, blw, blh);
         film.reset(new Film(blw, blh));
         th = std::thread(render_block, scene, spp,
                          resx, resy,
@@ -247,19 +248,24 @@ int main (int argc, char* argv[])
         }
     }
 
-
+#ifdef DEBUG_MALLOC
     std::cout << "baseline mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
+#endif
 
     try {
         std::unique_ptr<Scene> scene = nullptr;
+        Timer load_timer;
+
+        load_timer.start();
         scene.reset(load(input_filename));
+        load_timer.stop();
         // Scene* scene = nullptr;
         // scene = load(input_filename);
 
         printf("Resolution: %d x %d\n", resx, resy);
         printf("Samples per pixel: %d\n", spp);
 
-        unique_ptr<PathIntegrator> surf_integ( new PathIntegrator() );
+        // unique_ptr<PathIntegrator> surf_integ( new PathIntegrator() );
 
         int block_size = 32;
 
@@ -274,9 +280,16 @@ int main (int argc, char* argv[])
             }
         }
 
+#ifdef DEBUG_MALLOC
         std::cout << "pre-render mem usage "<<get_mem_usage()<<" bytes in allocations "<<get_mem_allocs()<<"\n";
+#endif
+
+        Timer render_timer;
+        render_timer.start();
 
         std::list<RenderTask*> active;
+        int total_tasks = tasks.size();
+        int completed_tasks = 0;
         while (active.size() < thread_count && tasks.size() > 0) {
             auto* t = tasks.back();
             tasks.pop_back();
@@ -296,19 +309,28 @@ int main (int argc, char* argv[])
                 active.push_back(t);
             }
 
-#ifdef WRAP_MALLOC
+            ++completed_tasks;
+            std::cout << "completed: " << completed_tasks << " / " << total_tasks << "\r";
+
+#ifdef DEBUG_MALLOC
             std::cout << "mem usage: "<<get_mem_usage()<<" bytes (peak "<<get_peak_mem_usage()<<" bytes) in allocations "<<get_mem_allocs()<<"\n";
 #endif
         }
+        std::cout << std::endl;
 
+        render_timer.stop();
 
         int paths = wholefilm.xres*wholefilm.yres*spp;
-        printf("Rays shot: %d\n", surf_integ->rays);
-        printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
+        // printf("Rays shot: %d\n", surf_integ->rays);
+        // printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
         printf("Paths shot: %d\n", paths);
-        printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
-        printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
-        printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
+        // printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
+        // printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
+        // printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
+
+        std::cout << std::endl;
+        std::cout << "Loading time   " << load_timer << std::endl;
+        std::cout << "Rendering time " << render_timer << std::endl;
 
         char filename[256];
         // sprintf(filename, "%s.png", output_filename);
@@ -336,7 +358,7 @@ int main (int argc, char* argv[])
         return 1;
     }
 
-#ifdef WRAP_MALLOC
+#ifdef DEBUG_MALLOC
     std::cout << std::endl;
     std::cout << "PEAK mem "<<get_peak_mem_usage()<<" bytes, peak allocations "<<get_peak_mem_allocs()<<"\n";
     std::cout << std::endl;
