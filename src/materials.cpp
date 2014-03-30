@@ -225,6 +225,22 @@ public:
     virtual Spectrum sample (const vec2& uv, const vec3& p) const = 0;
 };
 
+class SolidColor : public Texture
+{
+public:
+    SolidColor (const Spectrum& a)
+        : A(a)
+    { }
+
+    Spectrum sample (const vec2& uv, const vec3& p) const
+    {
+        return A;
+    }
+
+private:
+    Spectrum A;
+};
+
 class Checkers3D : public Texture
 {
 public:
@@ -245,15 +261,16 @@ private:
 class Diffuse : public Material
 {
 public:
-    Diffuse (const Spectrum& R)
+    Diffuse (const shared_ptr<Texture>& R)
         : R(R)
     { }
 
-    Spectrum R;
+    shared_ptr<Texture> R;
+    Transform xform;
 
     virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        Spectrum r = R;//Checkers3D(R, Spectrum(1)).sample(vec2(0,0), p);
+        Spectrum r = R->sample(vec2(0,0), xform.point(p));
         return unique_ptr<BSDF>(new Lambertian(r));
     }
 
@@ -303,14 +320,35 @@ public:
 
 
 
+void evaluate_texture (Value& val, List& args)
+{
+    shared_ptr<Texture> T;
+    auto name = *pop<std::string>(args);
+    if (name == "checker") {
+        Spectrum a = *pop<Spectrum>(args);
+        Spectrum b = *pop<Spectrum>(args);
+        T = make_shared<Checkers3D>(a, b);
+    }
+    else if (name == "solid") {
+        Spectrum a = *pop<Spectrum>(args);
+        T = make_shared<SolidColor>(a);
+    }
+    else {
+        throw std::runtime_error("invalid texture name");
+    }
+
+    // val.reset({"_texture", T});
+    val.reset(T);
+}
 
 void evaluate_material (Value& val, List& args)
 {
     Material* M;
     auto name = *pop<std::string>(args);
     if (name == "diffuse") {
-        Spectrum R = *pop_attr<Spectrum>("R", args);
-        M = new Diffuse(R);
+        Diffuse* MM = new Diffuse(pop_attr<Texture>("R", args));
+        MM->xform = *pop_attr<Transform>("_xform", make_shared<Transform>(), args);
+        M = MM;
     }
     else if (name == "mirror") {
         Spectrum R = *pop_attr<Spectrum>("R", args);

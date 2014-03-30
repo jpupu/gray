@@ -3,17 +3,17 @@
 
 (prim
     (shape box)
-    (material diffuse (R (white)))
+    (material diffuse (R (texture checker (rgb 1 1 1) (rgb .5 .5 .5))))
     (xform (scale 1)))
 
 (prim
     (shape plane)
-    (material diffuse (R <.8 .3 .3>))
+    (material diffuse (R (texture solid (rgb .8 .3 .3))))
     (xform (translate <0 -1.01 0>)))
 
 (prim
     (shape sphere)
-    (material diffuse (R (white)))
+    (material mirror (R (white)))
     (emit (rgb 10))
     (xform (translate <-2 3 2>)  (scale .7)))
 

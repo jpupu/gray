@@ -5,6 +5,7 @@
 #include "lisc_linalg.hpp"
 
 void evaluate_shape (Value& val, List& args);
+void evaluate_texture (Value& val, List& args);
 void evaluate_material (Value& val, List& args);
 void evaluate_camera (Value& val, List& args);
 void evaluate_skylight (Value& val, List& args);
@@ -127,6 +128,10 @@ bool evaluate_gray (Value& val, const std::string& name, List& args)
     }
     else if (name == "material") {
         evaluate_material(val, args);
+        return true;    
+    }
+    else if (name == "texture") {
+        evaluate_texture(val, args);
         return true;    
     }
     else if (name == "shape") {
