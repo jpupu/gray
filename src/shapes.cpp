@@ -382,7 +382,7 @@ public:
 
     void split ()
     {
-        if (faces.size() <= 3) return;
+        if (faces.size() <= 32) return;
         int axis = abs_max_elem(bbox.max - bbox.min);
         float th = (bbox.max[axis] + bbox.min[axis]) / 2;
 
