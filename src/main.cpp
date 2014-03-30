@@ -182,6 +182,14 @@ public:
                          film.get());
     }
 
+    void sync_run ()
+    {
+        film.reset(new Film(blw, blh));
+        render_block(scene, spp,
+                     resx, resy,
+                     bx * block_size, by * block_size,
+                     film.get());
+    }
 };
 
 
@@ -292,6 +300,12 @@ int main (int argc, char* argv[])
         std::list<RenderTask*> active;
         int total_tasks = tasks.size();
         int completed_tasks = 0;
+#ifdef PROFILING
+        for (auto t : tasks) {
+            t->sync_run();
+            wholefilm.merge(*t->film, t->bx*block_size, t->by*block_size);
+        }
+#else
         while (active.size() < thread_count && tasks.size() > 0) {
             auto* t = tasks.back();
             tasks.pop_back();
@@ -327,7 +341,8 @@ int main (int argc, char* argv[])
 #endif
         }
         std::cout << std::endl;
-
+#endif // PROFILING
+        
         render_timer.stop();
 
         int paths = wholefilm.xres*wholefilm.yres*spp;
