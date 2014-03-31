@@ -1,5 +1,5 @@
 #include "gray.hpp"
-#include "lisc.hpp"
+#include "lisc_gray.hpp"
 
 
 class PinholeCamera : public Camera
@@ -100,7 +100,7 @@ void evaluate_camera (Value& val, List& args)
     else {
         throw std::runtime_error("invalid camera name "+name);
     }
-    cam->set_xform(*pop_attr<Transform>("_xform", std::make_shared<Transform>(), args));
+    cam->set_xform(pop_transforms(args));
     auto size = pop_attr<glm::vec2>("size", nullptr, args);
     if (size != nullptr) {
         cam->set_film(size->x, size->y);

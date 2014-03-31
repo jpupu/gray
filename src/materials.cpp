@@ -1,5 +1,5 @@
 #include "util.hpp"
-#include "lisc.hpp"
+#include "lisc_gray.hpp"
 #include "gray.hpp"
 #include <memory>
 using std::unique_ptr;
@@ -320,10 +320,9 @@ public:
 
 
 
-void evaluate_texture (Value& val, List& args)
+bool evaluate_texture (Value& val, const std::string& name, List& args)
 {
     shared_ptr<Texture> T;
-    auto name = *pop<std::string>(args);
     if (name == "checker") {
         Spectrum a = *pop<Spectrum>(args);
         Spectrum b = *pop<Spectrum>(args);
@@ -334,36 +333,49 @@ void evaluate_texture (Value& val, List& args)
         T = make_shared<SolidColor>(a);
     }
     else {
-        throw std::runtime_error("invalid texture name");
+        return false;
     }
 
-    // val.reset({"_texture", T});
     val.reset(T);
+    return true;
 }
 
-void evaluate_material (Value& val, List& args)
+
+shared_ptr<Texture> pop_texture (List& args)
 {
-    Material* M;
-    auto name = *pop<std::string>(args);
+    if (args.front().is<Texture>()) {
+        return pop<Texture>(args);
+    }
+    else if (args.front().is<vec3>()) {
+        return make_shared<SolidColor>(Spectrum(*pop<vec3>(args)));
+    }
+    throw std::runtime_error("failed to extract texture or color");
+}
+
+
+
+bool evaluate_material (Value& val, const std::string& name, List& args)
+{
+    std::shared_ptr<Material> M;
     if (name == "diffuse") {
-        Diffuse* MM = new Diffuse(pop_attr<Texture>("R", args));
-        MM->xform = *pop_attr<Transform>("_xform", make_shared<Transform>(), args);
+        auto MM = make_shared<Diffuse>(pop_texture(args));
+        MM->xform = pop_transforms(args);
         M = MM;
     }
     else if (name == "mirror") {
-        Spectrum R = *pop_attr<Spectrum>("R", args);
-        M = new Mirror(R);
+        Spectrum R = *pop<Spectrum>(args);
+        M = make_shared<Mirror>(R);
     }
     else if (name == "glass") {
-        Spectrum R = *pop_attr<Spectrum>("R", args);
-        M = new Glass(R);
+        Spectrum R = *pop<Spectrum>(args);
+        M = make_shared<Glass>(R);
     }
     else {
-        throw std::runtime_error("invalid material name");
+        return false;
     }
 
-    std::shared_ptr<Material> sh(M);
-    val.reset({"_material", sh});
+    val.reset(M);
+    return true;
 }
 
 

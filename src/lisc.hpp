@@ -319,13 +319,48 @@ inline
 std::shared_ptr<T> pop_any (List& in)
 {
     for (auto it = in.begin(); it != in.end(); ++it) {
-        if (it->is<std::string>()) {
+        if (it->is<T>()) {
             auto x = it->get_ptr<T>();
             in.erase(it);
             return x;
         }
     }
-    throw std::runtime_error("pop_any: none found");
+    logger.format()
+        << "Element of type " << typeid(T).name() << " not found in " << in;
+    throw std::runtime_error(logger.get());
+}
+
+template<typename T>
+inline
+std::shared_ptr<T> pop_any (List& in, const std::shared_ptr<T>& defval)
+{
+    for (auto it = in.begin(); it != in.end(); ++it) {
+        if (it->is<T>()) {
+            auto x = it->get_ptr<T>();
+            in.erase(it);
+            return x;
+        }
+    }
+    return defval;
+}
+
+template<typename T>
+inline
+std::vector<std::shared_ptr<T>> pop_all (List& in)
+{
+    std::vector<std::shared_ptr<T>> result;
+    auto it = in.begin();
+    while (it != in.end()) {
+        if (it->is<T>()) {
+            auto x = it->get_ptr<T>();
+            it = in.erase(it);
+            result.push_back(x);
+        }
+        else {
+            ++it;
+        }
+    }
+    return result;
 }
 
 inline

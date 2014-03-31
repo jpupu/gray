@@ -87,15 +87,15 @@ void evaluate_skylight (Value& val, List& args)
     Skylight* sky;
     auto name = *pop<std::string>(args);
     if (name == "solid") {
-        auto R = *pop_attr<Spectrum>("R", args);
+        auto R = *pop<Spectrum>(args);
         sky = new SolidSkylight(R);
     }
     else if (name == "cosine") {
-        auto R = *pop_attr<Spectrum>("R", args);
+        auto R = *pop<Spectrum>(args);
         sky = new CosineSkylight(R);
     }
     else if (name == "probe") {
-        auto file = *pop_attr<std::string>("file", args);
+        auto file = *pop<std::string>(args);
         sky = new DebevecSkylight(file);
     }
     else {

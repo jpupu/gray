@@ -567,5 +567,6 @@ void evaluate_shape (Value& val, List& args)
     }
 
     std::shared_ptr<Shape> sh(S);
-    val.reset({"_shape", sh});
+    // val.reset({"_shape", sh});
+    val.reset(sh);
 }
