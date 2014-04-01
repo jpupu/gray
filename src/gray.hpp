@@ -14,7 +14,7 @@ typedef vec3 Spectrum;
 
 struct Ray
 {
-    static constexpr float epsilon = 1e-5f;
+    static constexpr float epsilon = 1e-4f;
 
     vec3 o;
     vec3 d;
