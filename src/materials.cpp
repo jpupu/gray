@@ -112,7 +112,7 @@ public:
     {
         *wi = vec3(-wo.x, -wo.y, wo.z);
         *pdf = 1;
-        return rho;
+        return rho / abs_cos_theta(*wi);
     }
 };
 
