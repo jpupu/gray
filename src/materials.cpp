@@ -87,6 +87,47 @@ public:
     }
 };
 
+
+class FresnelConductor : public Fresnel
+{
+public:
+    /// index of refraction
+    float eta;
+    /// absorbtion coefficient
+    float k;
+
+    FresnelConductor (float eta, float k)
+        : eta(eta), k(k)
+    { }
+
+    Spectrum evaluate (float cos_i) const
+    {
+        // reflectance for paraller polarized light
+        // r||^2 = (eta^2 + k^2) cos^2 - 2 eta cos + 1
+        //         ------------------------------------
+        //         (eta^2 + k^2) cos^2 + 2 eta cos + 1
+        //
+        // reflectance for perpendicular polarized light
+        // r|-^2 = (eta^2 + k^2) - 2 eta cos + cos^2
+        //         ------------------------------------
+        //         (eta^2 + k^2) + 2 eta cos + cos^2
+        //
+        // For unpolarized light,
+        // Fr = r||^2 + r|-^2
+        //      --------------
+        //            2
+
+        float e2k2 = eta*eta + k*k;
+        float eta2cos = 2 * eta * cos_i;
+        float cos2 = cos_i * cos_i;
+
+        float rpar2 = (e2k2*cos2 - eta2cos + 1) / (e2k2*cos2 + eta2cos + 1);
+        float rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
+
+        return Spectrum((rpar2 + rper2) * 0.5f);
+    }
+};
+
 class Lambertian : public BSDF
 {
 public:
