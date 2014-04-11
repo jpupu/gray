@@ -60,7 +60,7 @@ void Film::save_rgbe (const char* filename)
 {
     FILE* fp = fopen(filename, "wb");
     RGBE_WriteHeader(fp, xres, yres, NULL);
-    for (int y = yres-1; y >= 0; y--) {
+    for (int y = 0; y < yres; y++) {
         for (int x = 0; x < xres; x++) {
             Spectrum v = data[x+y*xres].normalized();
             RGBE_WritePixels(fp, &v.x, 1);
