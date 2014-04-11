@@ -113,7 +113,8 @@ float xxx;
 void render_block (Scene* scene, int spp,
                    int fullresx, int fullresy,
                    int xofs, int yofs,
-                   Film* filmp)
+                   Film* filmp,
+                   int* nans, int* negs)
 {
     srand(xofs+yofs*fullresx);
     Film& film = *filmp;
@@ -143,6 +144,12 @@ void render_block (Scene* scene, int spp,
                 }
                 else L = scene->skylight->sample(ray);
 
+                // NaN counter.
+                for (int i = 0; i < 3; i++) {
+                    nans += std::isnan(L.x) || std::isnan(L.y) || std::isnan(L.z);
+                    negs += (L.x < 0.0f) || (L.y < 0.0f) || (L.z < 0.0f);
+                }
+
                 film.add_sample(xf,yf, L);
             }
         }
@@ -160,6 +167,7 @@ public:
     int spp;
     Scene* scene;
     int blw, blh;
+    int nans, negs;
     std::unique_ptr<Film> film;
     std::thread th;
     RenderTask () {}
@@ -169,7 +177,8 @@ public:
         : bx(bx), by(by), block_size(block_size),
         resx(resx), resy(resy), spp(spp), scene(scene),
         blw(std::min(block_size, resx - bx*block_size)),
-        blh(std::min(block_size, resy - by*block_size))
+        blh(std::min(block_size, resy - by*block_size)),
+        nans(0), negs(0)
     { }
 
     void start ()
@@ -179,7 +188,7 @@ public:
         th = std::thread(render_block, scene, spp,
                          resx, resy,
                          bx * block_size, by * block_size,
-                         film.get());
+                         film.get(), &nans, &negs);
     }
 
     void sync_run ()
@@ -188,7 +197,7 @@ public:
         render_block(scene, spp,
                      resx, resy,
                      bx * block_size, by * block_size,
-                     film.get());
+                     film.get(), &nans, &negs);
     }
 };
 
@@ -300,10 +309,13 @@ int main (int argc, char* argv[])
         std::list<RenderTask*> active;
         int total_tasks = tasks.size();
         int completed_tasks = 0;
+        int nans = 0, negs = 0;
 #ifdef PROFILING
         for (auto t : tasks) {
             t->sync_run();
             wholefilm.merge(*t->film, t->bx*block_size, t->by*block_size);
+            nans += t->nans;
+            negs += t->negs;
         }
 #else
         while (active.size() < thread_count && tasks.size() > 0) {
@@ -317,6 +329,8 @@ int main (int argc, char* argv[])
             active.pop_front();
             t->th.join();
             wholefilm.merge(*t->film, t->bx*block_size, t->by*block_size);
+            nans += t->nans;
+            negs += t->negs;
             delete t;
             if (tasks.size() > 0) {
                 auto* t = tasks.back();
@@ -349,6 +363,8 @@ int main (int argc, char* argv[])
         // printf("Rays shot: %d\n", surf_integ->rays);
         // printf("Rays terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)surf_integ->rays * 100);
         printf("Paths shot: %d\n", paths);
+        printf("NaNs: %d\n", nans);
+        printf("Negatives: %d\n", negs);
         // printf("Paths reached light: %d (%.0f%%)\n", surf_integ->arrived, surf_integ->arrived / (float)paths * 100);
         // printf("Paths terminated: %d (%.0f%%)\n", surf_integ->terminated, surf_integ->terminated / (float)paths * 100);
         // printf("Avg rays/path: %.1f\n", (float)surf_integ->rays / paths);
