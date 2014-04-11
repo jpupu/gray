@@ -116,7 +116,6 @@ void render_block (Scene* scene, int spp,
                    Film* filmp,
                    int* nans, int* negs)
 {
-    srand(xofs+yofs*fullresx);
     Film& film = *filmp;
     std::unique_ptr<PathIntegrator> surf_integ(new PathIntegrator());
 
@@ -124,6 +123,7 @@ void render_block (Scene* scene, int spp,
 
     for (int yp = 0; yp < film.yres; yp++) {
         for (int xp = 0; xp < film.xres; xp++) {
+            srand((xofs+xp)+(yofs+yp)*fullresx);
             for (int s = 0; s < spp; s++) {
                 float rx = xp + frand();
                 float ry = yp + frand();
@@ -232,6 +232,9 @@ int main (int argc, char* argv[])
     int resx = 256;
     int resy = 256;
     int spp = 100;
+    int block_size = 32;
+    int single_block_x = -1;
+    int single_block_y = -1;
     unsigned int thread_count = 3;
     const char* input_filename = "test1.lisc";
     const char* output_filename = "out";
@@ -253,6 +256,14 @@ int main (int argc, char* argv[])
         }
         else if (strcmp(argv[i], "-M") == 0) {
             set_mem_limit(atol(argv[++i]) * 1000000);
+        }
+        else if (strcmp(argv[i], "-b") == 0) {
+            block_size = atol(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-S") == 0) {
+            single_block_x = atol(argv[++i]);
+            single_block_y = atol(argv[++i]);
+            block_size = 1;
         }
         else {
             input_filename = argv[i];
@@ -278,16 +289,21 @@ int main (int argc, char* argv[])
 
         // unique_ptr<PathIntegrator> surf_integ( new PathIntegrator() );
 
-        int block_size = 32;
-
         Film wholefilm(resx, resy);
         std::vector<RenderTask*> tasks;
-        for (int by = 0; by < (resy + block_size-1) / block_size; by++) {
-            for (int bx = 0; bx < (resx + block_size-1) / block_size; bx++) {
-                tasks.push_back(new RenderTask(bx, by, block_size,
-                                resx, resy, spp,
-                                scene.get()));
-                                // scene));
+        if (single_block_x != -1) {
+            tasks.push_back(new RenderTask(single_block_x, single_block_y,
+                            block_size,
+                            resx, resy, spp,
+                            scene.get()));
+        }
+        else {
+            for (int by = 0; by < (resy + block_size-1) / block_size; by++) {
+                for (int bx = 0; bx < (resx + block_size-1) / block_size; bx++) {
+                    tasks.push_back(new RenderTask(bx, by, block_size,
+                                    resx, resy, spp,
+                                    scene.get()));
+                }
             }
         }
         std::random_shuffle(tasks.begin(), tasks.end());
@@ -334,9 +350,9 @@ int main (int argc, char* argv[])
             }
 
             ++completed_tasks;
-            std::cout << "completed: " << completed_tasks << " / " << total_tasks << "\r";
 
             if (preview_timer.snap() > 2.0) {
+                std::cout << "completed: " << completed_tasks << " / " << total_tasks << "\r";
                 char filename[256];
                 sprintf(filename, "%s.hdr", output_filename);
                 wholefilm.save_rgbe(filename);
