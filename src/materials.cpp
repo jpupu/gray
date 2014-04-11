@@ -92,11 +92,11 @@ class FresnelConductor : public Fresnel
 {
 public:
     /// index of refraction
-    float eta;
+    Spectrum eta;
     /// absorbtion coefficient
-    float k;
+    Spectrum k;
 
-    FresnelConductor (float eta, float k)
+    FresnelConductor (Spectrum eta, Spectrum k)
         : eta(eta), k(k)
     { }
 
@@ -117,14 +117,35 @@ public:
         //      --------------
         //            2
 
-        float e2k2 = eta*eta + k*k;
-        float eta2cos = 2 * eta * cos_i;
+        // float e2k2 = eta*eta + k*k;
+        // float eta2cos = 2 * eta * cos_i;
+        // float cos2 = cos_i * cos_i;
+
+        // float rpar2 = (e2k2*cos2 - eta2cos + 1) / (e2k2*cos2 + eta2cos + 1);
+        // float rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
+
+        Spectrum e2k2 = eta*eta + k*k;
+        Spectrum eta2cos = 2.0f * eta * cos_i;
         float cos2 = cos_i * cos_i;
 
-        float rpar2 = (e2k2*cos2 - eta2cos + 1) / (e2k2*cos2 + eta2cos + 1);
-        float rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
+        Spectrum rpar2 = (e2k2*cos2 - eta2cos + Spectrum(1)) / (e2k2*cos2 + eta2cos + Spectrum(1));
+        Spectrum rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
 
-        return Spectrum((rpar2 + rper2) * 0.5f);
+        // std::cout << "rper2 " << rper2[0] << std::endl;
+        // std::cout << "rpar2 " << rpar2[0] << std::endl;
+        return (rpar2 + rper2) * 0.5f;
+    }
+};
+
+class FresnelOne : public Fresnel
+{
+public:
+    FresnelOne ()
+    { }
+
+    Spectrum evaluate (float cos_i) const
+    {
+        return Spectrum(1.0f);
     }
 };
 
@@ -208,7 +229,7 @@ public:
 
         // Check for total internal reflection
         if (sin2_i >= 1.0) {
-            return Spectrum(0.0f);
+            return Spectrum(0);
         }
 
         // Trigonometric identity: sin2 x + cos2 x = 1
@@ -259,6 +280,18 @@ public:
 //     printf("l = %f %f %f\n", l.x,l.y,l.z);
 // }
 
+void ttt (int argc, char* argv[])
+{
+    FresnelConductor fr(Spectrum(atof(argv[1])), Spectrum(atof(argv[2])));
+    std::cout << std::endl << 0 << std::endl;
+    std::cout << fr.evaluate(cos(0.0f/180*M_PI))[0] << std::endl;
+    std::cout << std::endl << 30 << std::endl;
+    std::cout << fr.evaluate(cos(30.0f/180*M_PI))[0] << std::endl;
+    std::cout << std::endl << 60 << std::endl;
+    std::cout << fr.evaluate(cos(60.0f/180*M_PI))[0] << std::endl;
+    std::cout << std::endl << 90 << std::endl;
+    std::cout << fr.evaluate(cos(90.0f/180*M_PI))[0] << std::endl;
+}
 
 class Texture
 {
@@ -328,8 +361,29 @@ public:
 
     virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
     {
-        // return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
-        return unique_ptr<BSDF>(new Specular(R));
+        return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelOne>()));
+    }
+
+};
+
+class Metal : public Material
+{
+public:
+    Metal (const Spectrum& n, const Spectrum& k)
+        : n(n), k(k)
+    { }
+
+    Spectrum n, k;
+
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    {
+        // return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelConductor>(0.05f, 3.131f)));
+        // 650, 
+        return unique_ptr<BSDF>(new SpecularReflection(Spectrum(1), make_shared<FresnelConductor>(n,k)));
+                                // Spectrum(0.21845, 1.16576, 1.031265), Spectrum(3.6370, 3.0957, 2.3896))));
+                                // Spectrum(0.2378, 1.0066269, 1.31346), Spectrum(3.6264, 2.5823, 2.1309))));
+        // return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelDielectric>(1.0f, 1.5f)));
+        // return unique_ptr<BSDF>(new Specular(R));
     }
 
 };
@@ -355,6 +409,8 @@ public:
         else {
             return unique_ptr<BSDF>(new SpecularTransmission(2.0f*R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
+
+        // return unique_ptr<BSDF>(new SpecularTransmission(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
     }
 
 };
@@ -406,6 +462,11 @@ bool evaluate_material (Value& val, const std::string& name, List& args)
     else if (name == "mirror") {
         Spectrum R = *pop<Spectrum>(args);
         M = make_shared<Mirror>(R);
+    }
+    else if (name == "metal") {
+        Spectrum n = *pop<Spectrum>(args);
+        Spectrum k = *pop<Spectrum>(args);
+        M = make_shared<Metal>(n, k);
     }
     else if (name == "glass") {
         Spectrum R = *pop<Spectrum>(args);
