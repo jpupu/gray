@@ -70,7 +70,7 @@ public:
         // lens diameter
         float D = f / N;
 
-        vec3 I(x, y, d_i);
+        vec3 I(x, -y, d_i);
         vec3 P(u*D/2, v*D/2, 0.0f);
         vec3 O(I.x/M, I.y/M, d_o);
 
