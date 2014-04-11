@@ -20,8 +20,8 @@ public:
 
     virtual std::pair<vec3,vec3> get_vector (float x, float y, float u, float v) const
     {
-        vec3 I(x, y, film_d);
-        return std::make_pair(vec3(0,0,0), normalize(-I));
+        vec3 I(x, -y, -film_d);
+        return std::make_pair(vec3(0,0,0), normalize(I));
     }
     
 };
