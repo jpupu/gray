@@ -124,6 +124,9 @@ public:
         // float rpar2 = (e2k2*cos2 - eta2cos + 1) / (e2k2*cos2 + eta2cos + 1);
         // float rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
 
+        // If the ray is coming from the inside, it's probably a clipping bug.
+        if (cos_i < 0) return Spectrum(0.0f);
+
         Spectrum e2k2 = eta*eta + k*k;
         Spectrum eta2cos = 2.0f * eta * cos_i;
         float cos2 = cos_i * cos_i;
@@ -131,6 +134,7 @@ public:
         Spectrum rpar2 = (e2k2*cos2 - eta2cos + Spectrum(1)) / (e2k2*cos2 + eta2cos + Spectrum(1));
         Spectrum rper2 = (e2k2 - eta2cos + cos2) / (e2k2 + eta2cos + cos2);
 
+        // std::cout << "eta " << eta << " cos_i " << cos_i << std::endl;
         // std::cout << "rper2 " << rper2[0] << std::endl;
         // std::cout << "rpar2 " << rpar2[0] << std::endl;
         return (rpar2 + rper2) * 0.5f;
