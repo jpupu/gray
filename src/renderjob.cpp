@@ -34,15 +34,11 @@ void Job::finish ()
 {
     wait_for_finish = true;
 
-    // std::cout << "Waiting until all threads are done...\n";
     std::unique_lock<std::mutex> lck(mtx);
     while (any_pending()) prod_cv.wait(lck);
     lck.unlock();
 
-    // cons_cv.notify_all();
-    // consumer_thread.join();
     for (auto& w : workers) {
-        // std::cout << "Stopping thread " << w->th.get_id() << "..." << std::endl;
         w->state = Worker::QUIT;
         w->cv.notify_all();
         w->th.join();
@@ -92,7 +88,6 @@ void Task::render ()
     std::unique_ptr<SurfaceIntegrator> surf_integ(SurfaceIntegrator::make());
 
     Camera* cam = job->scene.camera.get();
-    // std::cout << xofs << ", " << yofs << std::endl;
     for (int ly = 0; ly < yres; ly++) {
         for (int lx = 0; lx < xres; lx++) {
             int gx = xofs + lx;
@@ -117,11 +112,6 @@ void Task::render ()
     }   
 }
 
-// void Task::merge_output ()
-// {
-//     // Process result.
-//     job->film.merge(*film, xofs, yofs);
-// }
 
 ////
 
@@ -135,11 +125,7 @@ void Worker::loop ()
 {
     while (true) {
         std::unique_lock<std::mutex> lck(job->mtx);
-        // while (state != INPUT_READY && state != QUIT) cv.wait(lck);
-        while (state != INPUT_READY && state != QUIT) {
-            cv.wait(lck);
-            // std::cout << "woke " << std::this_thread::get_id() << " state " << state << std::endl;
-        }
+        while (state != INPUT_READY && state != QUIT) cv.wait(lck);
         if (state == QUIT) return;
         state = WORKING;
         lck.unlock();
@@ -148,11 +134,9 @@ void Worker::loop ()
 
         lck.lock();
         job->task_finished(task);
-        // task.merge_output();
         state = IDLE;
         lck.unlock();
         job->prod_cv.notify_all();
-        // job->cons_cv.notify_all();
     }
 }
 
