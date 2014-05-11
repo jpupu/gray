@@ -5,11 +5,11 @@
 
 namespace threaded_render {
 
-Job::Job (const Scene& scene, Film& film)
+Job::Job (int threads, const Scene& scene, Film& film)
     : scene(scene), film(film)
 {
     // Initialize workers.
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < threads; i++) {
         workers.push_back(std::make_shared<Worker>(this));
     }
 }
@@ -34,7 +34,7 @@ void Job::finish ()
 {
     wait_for_finish = true;
 
-    std::cout << "Waiting until all threads are done...\n";
+    // std::cout << "Waiting until all threads are done...\n";
     std::unique_lock<std::mutex> lck(mtx);
     while (any_pending()) prod_cv.wait(lck);
     lck.unlock();
@@ -42,10 +42,24 @@ void Job::finish ()
     // cons_cv.notify_all();
     // consumer_thread.join();
     for (auto& w : workers) {
-        std::cout << "Stopping thread " << w->th.get_id() << "..." << std::endl;
+        // std::cout << "Stopping thread " << w->th.get_id() << "..." << std::endl;
         w->state = Worker::QUIT;
         w->cv.notify_all();
         w->th.join();
+    }
+}
+
+void Job::set_callback (std::function<void(const Task&)> cb)
+{
+    task_done_cb = cb;
+}
+
+
+void Job::task_finished (const Task& task)
+{
+    film.merge(*task.film, task.xofs, task.yofs);
+    if (task_done_cb) {
+        task_done_cb(task);
     }
 }
 
@@ -78,7 +92,7 @@ void Task::render ()
     std::unique_ptr<SurfaceIntegrator> surf_integ(SurfaceIntegrator::make());
 
     Camera* cam = job->scene.camera.get();
-    std::cout << xofs << ", " << yofs << std::endl;
+    // std::cout << xofs << ", " << yofs << std::endl;
     for (int ly = 0; ly < yres; ly++) {
         for (int lx = 0; lx < xres; lx++) {
             int gx = xofs + lx;
@@ -103,11 +117,11 @@ void Task::render ()
     }   
 }
 
-void Task::merge_output ()
-{
-    // Process result.
-    job->film.merge(*film, xofs, yofs);
-}
+// void Task::merge_output ()
+// {
+//     // Process result.
+//     job->film.merge(*film, xofs, yofs);
+// }
 
 ////
 
@@ -124,7 +138,7 @@ void Worker::loop ()
         // while (state != INPUT_READY && state != QUIT) cv.wait(lck);
         while (state != INPUT_READY && state != QUIT) {
             cv.wait(lck);
-            std::cout << "woke " << std::this_thread::get_id() << " state " << state << std::endl;
+            // std::cout << "woke " << std::this_thread::get_id() << " state " << state << std::endl;
         }
         if (state == QUIT) return;
         state = WORKING;
@@ -133,7 +147,8 @@ void Worker::loop ()
         task.render();
 
         lck.lock();
-        task.merge_output();
+        job->task_finished(task);
+        // task.merge_output();
         state = IDLE;
         lck.unlock();
         job->prod_cv.notify_all();

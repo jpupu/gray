@@ -20,9 +20,11 @@ class Worker;
 class Job
 {
 public:
-    Job (const Scene& scene, Film& film);
+    Job (int threads, const Scene& scene, Film& film);
     void add_task (const TaskDesc&);
     void finish ();
+
+    void set_callback (std::function<void(const Task&)> cb);
 
 public:
     const Scene& scene;
@@ -30,6 +32,9 @@ public:
     std::mutex mtx;
     std::condition_variable prod_cv;
     // std::condition_variable cons_cv;
+
+    /// Called by task itself.
+    void task_finished (const Task&);
 
 private:
     bool wait_for_finish;
@@ -39,6 +44,7 @@ private:
     Worker* find_worker (int state);
     bool any_pending () const;
     // void consumer ();
+    std::function<void(const Task&)> task_done_cb;
 };
 
 class TaskDesc
@@ -59,7 +65,7 @@ public:
     Task (Job*, const TaskDesc& desc);
 
     void render ();
-    void merge_output ();
+    // void merge_output ();
 };
 
 class Worker

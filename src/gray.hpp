@@ -187,5 +187,15 @@ public:
     }
 };
 
+class SurfaceIntegrator
+{
+public:
+    /// The outgoing radiance along the ray,
+    /// or the incoming radiance at the ray origin.
+    virtual Spectrum Li (Ray& ray, const Scene* scene) = 0;
+
+    static SurfaceIntegrator* make ();
+};
+
 
 #endif /* GRAY_HPP */
