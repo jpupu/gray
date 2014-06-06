@@ -1,0 +1,56 @@
+
+--(prim
+--    (shape plane)
+--    (diffuse (checker (rgb 1 1 1) (rgb .5 .5 .5)) (scale 2))
+
+--    )
+
+----(prim
+----    (shape rectangle)
+----    (material diffuse (R (rgb 1 1 1)))
+----    (xform (rotate 90 <1 0 0>)))
+
+----(prim
+----    (shape rectangle)
+----    (material diffuse (R (rgb 1 1 1)))
+----    (xform (translate <0 -1 0>)))
+
+--(skylight solid (rgb 1))
+--(camera thinlens
+--    (xform (translate <0 2 4>) (rotate -10 <1 0 0>))
+--    (focal_length 50)
+--    (focus_distance 10)
+--    (f_number 0.8)
+--    (size <36 36>))
+
+(def white (rgb .9 .9 .9))
+
+(prim
+    (shape box)
+    (diffuse (checker (rgb 1 1 1) (rgb .5 .5 .5)) (scale 1.8)  (rotate 30 <0 0 1>))
+    )
+
+(prim
+    (shape plane)
+    (diffuse (checker (rgb .8 .3 .3) (rgb 1)) (scale .3) (rotate 10 <0 1 0>))
+    (translate <0 -1.01 0>))
+
+(prim
+    (shape sphere)
+    (diffuse (checker (rgb .3 .9 .3) (rgb .1 .6 .2)))
+    (translate <0 1.4 0>) (scale .4))
+
+(prim
+    (shape sphere)
+    (mirror (white))
+    (emit (rgb 10))
+    (translate <-2 3 2>)  (scale .7))
+
+(skylight solid (rgb 1))
+
+(camera thinlens
+    (rotate 30 <0 1 0>) (rotate -40 <1 0 0>) (translate <0 0 8>)
+    (focal_length 55)
+    (focus_distance 7.5)
+    (f_number 2.8)
+    (size <36 36>))

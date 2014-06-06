@@ -1,0 +1,34 @@
+
+
+(def white (rgb .9 .9 .9))
+
+(def bunny (shape ply_mesh ../models/bun_zipper.ply))
+
+(prim
+    (bunny)
+    (diffuse (solid (rgb .9)))
+    (translate <0 -1.55 0>) (scale 16) 
+    )
+
+(prim
+    (shape rectangle)
+    (diffuse (checker (rgb .6) (rgb .8 .3 .3)) (scale .25))
+    (scale 1) (translate <0 -1.01 0>) (scale 4) )
+
+(prim
+    (shape sphere)
+    (mirror (rgb .8 .85 .9))
+    (translate <.5 -.6 2>) (scale .4))
+
+--(skylight probe ../all_probes/uffizi_probe.hdr)
+--(skylight probe ../all_probes/rnl_probe.hdr)
+--(skylight probe ../all_probes/grace_probe.hdr)
+(skylight probe ../all_probes/stpeters_probe.hdr)
+--(skylight solid (rgb 1))
+
+(camera thinlens
+    (rotate -20 <0 1 0>) (rotate -10 <1 0 0>) (translate <0 0 8>)
+    (focal_length 55)
+    (focus_distance 7.5)
+    (f_number 2.8)
+    (size <36 36>))

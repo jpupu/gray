@@ -1,0 +1,37 @@
+-- This is a comment.
+
+(def white (rgb .9 .9 .9))
+(def chalk (material diffuse (R (white))))
+
+(prim
+    (shape plane)
+    (material diffuse (R <.8 .3 .3>))
+    (xform (rotate 30 <0 0 1>) (translate <0 -1 0>))
+    )
+
+(prim
+    (shape plane)
+    (material diffuse (R <.3 .8 .3>))
+    (xform (rotate -30 <0 0 1>) (translate <0 -1 0>))
+    )
+
+(prim
+    (shape sphere)
+    (chalk)
+    (xform (scale 1.3)))
+
+(prim
+    (shape sphere)
+    (chalk)
+    (emit (rgb 10))
+    (xform (translate <-1 2 1>)  (scale .5)))
+
+
+(skylight solid (R (rgb .05 .1 .2)))
+
+(camera thinlens
+    (xform (translate <0 0 10>) (rotate -0 <1 0 0>))
+    (focal_length 55)
+    (focus_distance 9.5)
+    (f_number 2.8)
+    (size <36 36>))
