@@ -154,6 +154,68 @@ float sin_theta (const vec3& w)
     return sqrtf(sin2_theta(w));
 }
 
+/** Compute tangent of angle between w and normal (0,0,1).
+ * w must be unit vector.
+ */
+inline
+float tan_theta (const vec3& w)
+{
+    // w_xy = (w_x, w_y, 0)
+    // tan phi = |w_xy| / w_z
+    return sqrtf(w.x*w.x + w.y*w.y) / w.z;
+}
+
+/** Compute cosine of angle between w projected on xy-plane and (1,0,0).
+ * w must be unit vector.
+ */
+inline
+float cos_phi (const vec3& w)
+{
+    // w_xy = (w_x, w_y, 0)
+    // |w_xy| cos phi = w_xy . (1,0,0) = w_x
+    // <=> cos phi = w_x / |w_xy| = w_x / sqrt(w_x^2 + w_y^2)
+
+    float discr = w.x*w.x + w.y*w.y;
+
+    if (discr > 0) {
+        return w.x / sqrtf(discr);
+    }
+    else {
+        return 0;
+    }
+}
+
+/** Compute sine of angle between w projected on xy-plane and (1,0,0).
+ * w must be unit vector.
+ */
+inline
+float sin_phi (const vec3& w)
+{
+    // w_xy = (w_x, w_y, 0)
+    // sin phi = w_xy . (0,1,0) / |w_xy| = w_y / |w_xy| = w_y / sqrt(w_x^2 + w_y^2)
+
+    float discr = w.x*w.x + w.y*w.y;
+
+    if (discr > 0) {
+        return w.y / sqrtf(w.x*w.x + w.y*w.y);
+    }
+    else {
+        return 1;
+    }
+}
+
+/** Compute tangent of angle between w projected on xy-plane and (1,0,0).
+ * w must be unit vector.
+ */
+inline
+float tan_phi (const vec3& w)
+{
+    // w_xy = (w_x, w_y, 0)
+    // tan phi = w_y / w_x
+    return w.y / w.x;
+}
+
+
 
 
  
