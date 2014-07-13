@@ -263,6 +263,52 @@ public:
     }
 };
 
+
+class OrenNayar : public BSDF
+{
+public:
+    OrenNayar (const Spectrum& rho, const Spectrum& sigma)
+        : rho(rho)
+    {
+        float sigma2 = sigma.r * sigma.r;
+        A = 1 - sigma2 / (2 * (sigma2 + 0.33));
+        B = 0.45*sigma2 / (sigma2 + 0.09);
+    }
+    /// reflectance
+    Spectrum rho;
+    float A, B;
+
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
+    {
+        // a = max(theta_i, theta_o)
+        // b = min(theta_i, theta_o)
+        //
+        // fr(w_i, w_o) = rho/pi (A + B max(0,cos(phi_i - phi_o)) sin a tan b)
+        // 
+        //    [ cos(x-y) = cos x cos y + sin x sin y ]
+        //
+
+        *wi = uniform_sample_hemisphere(uv);
+        *pdf = uniform_hemisphere_pdf();
+        
+        // cos X < cos Y  <==> X > Y
+        bool igto = cos_theta(*wi) < cos_theta(wo);
+        float sin_a = igto ? sin_theta(*wi) : sin_theta(wo);
+        float tan_b = igto ? tan_theta(wo) : tan_theta(*wi);
+
+        float c = cos_phi(*wi)*cos_phi(wo) + sin_phi(*wi)*sin_phi(wo);
+        // float c = cos_phi(*wi)*cos_phi(wo)*1 + 1*sin_phi(*wi)*sin_phi(wo);
+        // c = c*sin_a*tan_b;
+
+        float term = (A + B * std::max(0.0f, c) * sin_a * tan_b);
+
+        return term * rho / (float)M_PI;
+    }
+};
+
+
+
+
 // void ttt()
 // {
 //     FresnelDielectric fr(1.0, 1.3);
@@ -350,6 +396,26 @@ public:
     {
         Spectrum r = R->sample(vec2(0,0), xform.point(p));
         return unique_ptr<BSDF>(new Lambertian(r));
+    }
+
+};
+
+class Diffuse2 : public Material
+{
+public:
+    Diffuse2 (const shared_ptr<Texture>& R, const std::shared_ptr<Texture>& S)
+        : R(R), S(S)
+    { }
+
+    shared_ptr<Texture> R;
+    shared_ptr<Texture> S;
+    Transform xform;
+
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    {
+        Spectrum r = R->sample(vec2(0,0), xform.point(p));
+        Spectrum s = S->sample(vec2(0,0), xform.point(p));
+        return unique_ptr<BSDF>(new OrenNayar(r, s));
     }
 
 };
@@ -460,6 +526,13 @@ bool evaluate_material (Value& val, const std::string& name, List& args)
     std::shared_ptr<Material> M;
     if (name == "diffuse") {
         auto MM = make_shared<Diffuse>(pop_texture(args));
+        MM->xform = pop_transforms(args);
+        M = MM;
+    }
+    else if (name == "diffuse2") {
+        auto rho = pop_texture(args);
+        auto sigma = pop_texture(args);
+        auto MM = make_shared<Diffuse2>(rho, sigma);
         MM->xform = pop_transforms(args);
         M = MM;
     }
