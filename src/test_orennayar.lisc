@@ -2,13 +2,14 @@
 (def white (rgb .9 .9 .9))
 
 (prim
-    (shape sphere)
+    --(shape sphere)
+    (shape ply_mesh ../models/bun_zipper.ply (height 2) (floor -1))
     (diffuse (solid (rgb 1 1 1)))
     (translate <-1.2 0 0>)
     )
 
 (prim
-    (shape sphere)
+    (shape ply_mesh ../models/bun_zipper.ply (height 2) (floor -1))
     (diffuse2 (solid (rgb 1 1 1)) (solid (rgb 1.0)))
     (translate <1.2 0 0>)
     )

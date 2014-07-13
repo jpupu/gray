@@ -2,10 +2,58 @@
 #include "lisc.hpp"
 #include "util.hpp"
 
+BBox::BBox ()
+    : min(vec3(99999)), max(vec3(-99999))
+{ }
+
+BBox::BBox (const vec3& min, const vec3& max)
+    : min(min), max(max)
+{ }
+
+void BBox::extend (const vec3& v)
+{
+    if (v.x < min.x) min.x = v.x;
+    if (v.y < min.y) min.y = v.y;
+    if (v.z < min.z) min.z = v.z;
+    if (v.x > max.x) max.x = v.x;
+    if (v.y > max.y) max.y = v.y;
+    if (v.z > max.z) max.z = v.z;
+}
+
+bool BBox::intersect (const Ray& ray) const
+{
+    // http://www.scratchapixel.com/lessons/3d-basic-lessons/lesson-7-intersecting-simple-shapes/ray-box-intersection/
+    
+    float tmin = (min.x - ray.o.x) / ray.d.x;
+    float tmax = (max.x - ray.o.x) / ray.d.x;
+    if (tmin > tmax) std::swap(tmin, tmax);
+    float tymin = (min.y - ray.o.y) / ray.d.y;
+    float tymax = (max.y - ray.o.y) / ray.d.y;
+    if (tymin > tymax) std::swap(tymin, tymax);
+    if ((tmin > tymax) || (tymin > tmax))
+    return false;
+    if (tymin > tmin) tmin = tymin;
+    if (tymax < tmax) tmax = tymax;
+    float tzmin = (min.z - ray.o.z) / ray.d.z;
+    float tzmax = (max.z - ray.o.z) / ray.d.z;
+    if (tzmin > tzmax) std::swap(tzmin, tzmax);
+    if ((tmin > tzmax) || (tzmin > tmax)) return false;
+    if (tzmin > tmin) tmin = tzmin;
+    if (tzmax < tmax) tmax = tzmax;
+    if ((tmin > ray.tmax) || (tmax < ray.tmin)) return false;
+    // if (ray.tmin < tmin) ray.tmin = tmin;
+    // if (ray.tmax > tmax) ray.tmax = tmax;
+    return true;
+}
+
+
+
 class Sphere : public Shape
 {
 public:
     bool intersect (Ray& r, Isect* isect);
+
+    BBox get_bbox () const { return BBox(vec3(-1), vec3(1)); }
 };
 
 
@@ -57,6 +105,12 @@ public:
 
         return true;
     }
+
+    BBox get_bbox () const
+    {
+        const float inf = std::numeric_limits<double>::infinity();
+        return BBox(vec3(-inf,0,-inf), vec3(inf,0,inf));
+    }
 };
 
 
@@ -80,6 +134,9 @@ public:
 
         return true;
     }
+
+    BBox get_bbox () const { return BBox(vec3(-1,0,-1), vec3(1,0,1)); }
+
 };
 
 
@@ -146,6 +203,8 @@ public:
 
 
     }
+
+    BBox get_bbox () const { return BBox(vec3(-1), vec3(1)); }
 };
 
 
@@ -193,6 +252,8 @@ public:
 
         return true;
     }
+
+    BBox get_bbox () const { return BBox(vec3(-1,0,-1), vec3(1,0,1)); }
 };
 
 
@@ -203,6 +264,9 @@ public:
     std::vector<vec3> normals;
     std::vector<int> vertex_indices;
     bool smooth;
+    BBox bbox;
+
+    BBox get_bbox () const { return bbox; }
 
     vec3& vertex (int face, int v)
     {
@@ -274,6 +338,36 @@ public:
         return true;
     }
 
+    void calculate_bbox ()
+    {
+        for (auto& v : vertices) {
+            bbox.extend(v);
+        }
+        std::cout << "BBox " << bbox.min << " -- " << bbox.max << std::endl;
+    }
+
+    void adjust_floor (float floor_y = 0.0f)
+    {
+        float bias = floor_y - bbox.min.y;
+        bbox = BBox();
+        for (auto& v : vertices) {
+            v.y += bias;
+            bbox.extend(v);
+        }
+        std::cout << "new BBox " << bbox.min << " -- " << bbox.max << std::endl;
+    }
+
+    void adjust_height (float height = 1.0f)
+    {
+        float scale = height / (bbox.max.y - bbox.min.y);
+        bbox = BBox();
+        for (auto& v : vertices) {
+            v *= scale;
+            bbox.extend(v);
+        }
+        std::cout << "new BBox " << bbox.min << " -- " << bbox.max << std::endl;
+    }
+
     void calculate_smooth_normals ()
     {
         normals.clear();
@@ -285,7 +379,7 @@ public:
                 vec3 e1 = normalize(vertex(face, (i+1)%3) - vertex(face, i));
                 vec3 e2 = normalize(vertex(face, (i+2)%3) - vertex(face, i));
                 float w = acos(dot(e1, e2));
-                normal(face,i) += n;
+                normal(face,i) += n * w;
             }
         }
         for (size_t i = 0; i < normals.size(); i++) {
@@ -294,52 +388,6 @@ public:
     }
 };
 
-
-class BBox
-{
-public:
-    vec3 min, max;
-
-    BBox ()
-        : min(vec3(99999)), max(vec3(-99999))
-    { }
-
-    void extend (const vec3& v)
-    {
-        if (v.x < min.x) min.x = v.x;
-        if (v.y < min.y) min.y = v.y;
-        if (v.z < min.z) min.z = v.z;
-        if (v.x > max.x) max.x = v.x;
-        if (v.y > max.y) max.y = v.y;
-        if (v.z > max.z) max.z = v.z;
-    }
-
-    bool intersect (const Ray& ray) const
-    {
-        // http://www.scratchapixel.com/lessons/3d-basic-lessons/lesson-7-intersecting-simple-shapes/ray-box-intersection/
-        
-        float tmin = (min.x - ray.o.x) / ray.d.x;
-        float tmax = (max.x - ray.o.x) / ray.d.x;
-        if (tmin > tmax) std::swap(tmin, tmax);
-        float tymin = (min.y - ray.o.y) / ray.d.y;
-        float tymax = (max.y - ray.o.y) / ray.d.y;
-        if (tymin > tymax) std::swap(tymin, tymax);
-        if ((tmin > tymax) || (tymin > tmax))
-        return false;
-        if (tymin > tmin) tmin = tymin;
-        if (tymax < tmax) tmax = tymax;
-        float tzmin = (min.z - ray.o.z) / ray.d.z;
-        float tzmax = (max.z - ray.o.z) / ray.d.z;
-        if (tzmin > tzmax) std::swap(tzmin, tzmax);
-        if ((tmin > tzmax) || (tzmin > tmax)) return false;
-        if (tzmin > tmin) tmin = tzmin;
-        if (tzmax < tmax) tmax = tzmax;
-        if ((tmin > ray.tmax) || (tmax < ray.tmin)) return false;
-        // if (ray.tmin < tmin) ray.tmin = tmin;
-        // if (ray.tmax > tmax) ray.tmax = tmax;
-        return true;
-    }
-};
 
 class BVHNode
 {
@@ -452,7 +500,7 @@ public:
 
 
 #include <fstream>
-Mesh* load_ply (std::ifstream& ifs)
+BVHMesh* load_ply (std::ifstream& ifs, double floor=NAN, double height=NAN)
 {
     auto* M = new BVHMesh();
     // auto* M = new Mesh();
@@ -503,6 +551,9 @@ Mesh* load_ply (std::ifstream& ifs)
         M->vertex_indices.push_back(c);
     }
 
+    M->calculate_bbox();
+    if (!std::isnan(height)) M->adjust_height(height);
+    if (!std::isnan(floor)) M->adjust_floor(floor);
     M->smooth = true;
     M->calculate_smooth_normals();
 
@@ -558,13 +609,17 @@ void evaluate_shape (Value& val, List& args)
         S = m;
     }
     else if (name == "ply_mesh") {
+        double height = *pop_attr<double>("height", make_shared<double>(NAN), args);
+        double floor = *pop_attr<double>("floor", make_shared<double>(NAN), args);
         std::ifstream ifs(*pop<std::string>(args));
-        auto* m = load_ply(ifs);
+        auto* m = load_ply(ifs, floor, height);
         S = m;
     }
     else {
         throw std::runtime_error("invalid shape name "+name);
     }
+
+
 
     std::shared_ptr<Shape> sh(S);
     // val.reset({"_shape", sh});

@@ -12,6 +12,8 @@ using std::make_shared;
 
 typedef vec3 Spectrum;
 
+
+
 struct Ray
 {
     static constexpr float epsilon = 1e-4f;
@@ -31,6 +33,20 @@ struct Ray
     }
 };
 
+class BBox
+{
+public:
+    vec3 min, max;
+
+    BBox ();
+    BBox (const vec3& min, const vec3& max);
+    void extend (const vec3& v);
+    bool intersect (const Ray& ray) const;
+
+    /// Bounding box dimensions.
+    vec3 dim () const { return max - min; }
+};
+
 class Material;
 
 struct Isect
@@ -47,6 +63,8 @@ class Shape
 public:
 	virtual ~Shape () {}
     virtual bool intersect (Ray& r, Isect* isect) = 0;
+
+    virtual BBox get_bbox () const = 0;
 };
 
 

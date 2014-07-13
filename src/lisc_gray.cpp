@@ -73,6 +73,20 @@ void evaluate_prim (Value& val, List& args)
 
     p->Le = *pop_attr<Spectrum>("emit", std::shared_ptr<Spectrum>(new Spectrum(0)), args);
 
+    // constexpr double UNINITED = -12345;
+    // double floor = *pop_attr<double>("floor", make_shared<double>(UNINITED), args);
+    // if (floor != UNINITED) {
+    //     float bias = floor - p->shape->get_bbox().min.y;
+    //     p->world_from_prim = p->world_from_prim * Transform::translate(vec3(0,bias,0));
+    // }
+    // double height = *pop_attr<double>("height", make_shared<double>(UNINITED), args);
+    // if (height != UNINITED) {
+    //     float scale = height / p->shape->get_bbox().dim().y;
+    //     p->world_from_prim = p->world_from_prim * Transform::scale(vec3(scale));
+    // }
+
+
+
     std::shared_ptr<Primitive> sh(dynamic_cast<Primitive*>(p));
     val.reset({"_prim", sh});
 }
