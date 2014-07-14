@@ -304,6 +304,12 @@ public:
 
         float term = (A + B * std::max(0.0f, c) * sin_a * tan_b);
 
+        debug::add("wo", wo);
+        debug::add("wi", *wi);
+        debug::add("c", c);
+        debug::add("sin_a", sin_a);
+        debug::add("tan_b", tan_b);
+
         return term * rho / (float)M_PI;
     }
 };

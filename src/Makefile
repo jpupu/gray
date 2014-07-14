@@ -5,6 +5,7 @@ CC= gcc
 WRAP_MALLOC=1
 
 CXXFLAGS = -O3 -pedantic -Wall -g -ggdb --std=c++11
+CXXFLAGS += -DENABLE_DEBUG=1
 
 ifdef WRAP_MALLOC
 	CXXFLAGS += -DWRAP_MALLOC -Wl,--wrap,malloc,--wrap,free,--wrap,realloc,--wrap,calloc

@@ -18,7 +18,9 @@ public:
 };
 
 
-
+namespace debug {
+    int x,y,sample,nest,on=0;
+}
 
 
 // class SurfaceIntegrator
@@ -66,9 +68,11 @@ public:
 
     virtual Spectrum Li (Ray& ray, const Scene* scene)
     {
+        debug::up();
         constexpr float russian_p = 0.99;
         if (frand() > russian_p) {
             terminated++;
+            debug::down();
             return Spectrum(0.0f);
         }
 
@@ -94,6 +98,7 @@ public:
 
             // Light transport equation.
             L = isect.Le + f * Li * abs_cos_theta(wi_t) / pdf;
+            debug::add("f", f);
         }
         else {
             // The ray did not hit the scene.
@@ -102,7 +107,8 @@ public:
         }
 
         L = L / russian_p;
-
+        debug::add("L", L);
+        debug::down();
         return L;
     }
 };
@@ -177,6 +183,9 @@ int main (int argc, char* argv[])
         }
         else if (strcmp(argv[i], "-b") == 0) {
             block_size = atol(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-d") == 0) {
+            debug::on = 1;
         }
         else if (strcmp(argv[i], "-S") == 0) {
             single_block_x = atol(argv[++i]);

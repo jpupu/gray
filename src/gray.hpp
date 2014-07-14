@@ -12,6 +12,68 @@ using std::make_shared;
 
 typedef vec3 Spectrum;
 
+#include <iostream>
+namespace debug {
+    extern int x,y,sample,nest,on;
+
+    inline
+    void set (int x, int y, int sample)
+    {
+#if ENABLE_DEBUG
+        debug::x = x;
+        debug::y = y;
+        debug::sample = sample;
+        debug::nest = 0;
+#endif // ENABLE_DEBUG
+    }
+
+    inline
+    void boiler ()
+    {
+#if ENABLE_DEBUG
+        std::cout << debug::x << "," << debug::y << ":";
+        std::cout << debug::sample << ":" << debug::nest << "::";
+#endif // ENABLE_DEBUG
+    }
+
+    inline
+    void add (const char* id, const vec3& v)
+    {
+#if ENABLE_DEBUG
+        if(on){
+            boiler();
+            std::cout << id << " " << v << "\n";
+        }
+#endif // ENABLE_DEBUG
+    }
+
+    inline
+    void add (const char* id, const float v)
+    {
+#if ENABLE_DEBUG
+        if(on){
+            boiler();
+            std::cout << id << " " << v << "\n";
+        }
+#endif // ENABLE_DEBUG
+    }
+
+    inline
+    void up ()
+    {
+#if ENABLE_DEBUG
+        nest++;
+#endif // ENABLE_DEBUG
+    }
+
+    inline
+    void down ()
+    {
+#if ENABLE_DEBUG
+        nest--;
+#endif // ENABLE_DEBUG
+    }
+}
 
 
 struct Ray

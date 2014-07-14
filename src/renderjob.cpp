@@ -105,7 +105,9 @@ void Task::render ()
                 Ray ray(cam->generate_ray(fgx, fgy,
                                           frand(), frand()));
 
+                debug::set(gx,gy,s);
                 Spectrum L = surf_integ->Li(ray, &job->scene);
+                debug::add("L", L);
                 film->add_sample(flx, fly, L);
             }
         }
