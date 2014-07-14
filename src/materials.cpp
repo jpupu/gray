@@ -288,6 +288,8 @@ public:
         //    [ cos(x-y) = cos x cos y + sin x sin y ]
         //
 
+        if (wo.z <= 0) return Spectrum(0);
+
         *wi = uniform_sample_hemisphere(uv);
         *pdf = uniform_hemisphere_pdf();
         
