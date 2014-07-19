@@ -400,7 +400,7 @@ public:
     shared_ptr<Texture> R;
     Transform xform;
 
-    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
     {
         Spectrum r = R->sample(vec2(0,0), xform.point(p));
         return unique_ptr<BSDF>(new Lambertian(r));
@@ -419,7 +419,7 @@ public:
     shared_ptr<Texture> S;
     Transform xform;
 
-    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
     {
         Spectrum r = R->sample(vec2(0,0), xform.point(p));
         Spectrum s = S->sample(vec2(0,0), xform.point(p));
@@ -437,7 +437,7 @@ public:
 
     Spectrum R;
 
-    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
     {
         return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelOne>()));
     }
@@ -453,7 +453,7 @@ public:
 
     Spectrum n, k;
 
-    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
     {
         // return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelConductor>(0.05f, 3.131f)));
         // 650, 
@@ -475,13 +475,14 @@ public:
 
     Spectrum R;
 
-    virtual unique_ptr<BSDF> get_bsdf (const vec3& p) const
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
     {
         // These should be scaled by 2, because p == 1/2.
         // But we can't scale a BSDF.
         // Instead we probably should return a combination BSDF.
         // Well, I guess we can scale the R.
-        if (frand() < 0.5f) {
+        // if (frand() < 0.5f) {
+        if (u.x < 0.5f) {
             return unique_ptr<BSDF>(new SpecularReflection(2.0f*R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
         }
         else {

@@ -4,11 +4,14 @@
 #include "mymath.hpp"
 #include "Transform.hpp"
 #include <algorithm>
+#include <random>
 
 inline
 float frand ()
 {
-    return rand() / (float)RAND_MAX;
+    static std::mt19937 rng;
+    return rng() / (float)0xffffffff;
+    // return rand() / (float)RAND_MAX;
 }
 
 inline

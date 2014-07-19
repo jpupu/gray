@@ -12,6 +12,12 @@ Job::Job (int threads, const Scene& scene, Film& film)
     for (int i = 0; i < threads; i++) {
         workers.push_back(std::make_shared<Worker>(this));
     }
+    seeds.resize(film.xres*film.xres);
+    std::default_random_engine generator;
+    generator.seed(14217);
+    for(int i = 0; i < seeds.size(); i++) {
+        seeds[i] = generator();
+    }
 }
 
 void Job::add_task (const TaskDesc& desc)
@@ -83,19 +89,29 @@ Task::Task (Job* job, const TaskDesc& desc)
     film(new Film(xres, yres))
 { }
 
+
+
 void Task::render ()
 {
     std::unique_ptr<SurfaceIntegrator> surf_integ(SurfaceIntegrator::make());
+    SampleGenerator sampler(20, spp);
+    std::mt19937 generator;
 
     Camera* cam = job->scene.camera.get();
     for (int ly = 0; ly < yres; ly++) {
         for (int lx = 0; lx < xres; lx++) {
             int gx = xofs + lx;
             int gy = yofs + ly;
-            srand(gx + gy * job->film.xres);
+            generator.seed(job->seeds[gx+gy*job->film.xres]);
+            sampler.generate(generator);
+
             for (int s = 0; s < spp; s++) {
-                float dx = frand();
-                float dy = frand();
+                Sample sample = sampler.next();
+                // float dx = frand();
+                // float dy = frand();
+                vec2 dxy = sample.get2d();
+                float dx = dxy.x;
+                float dy = dxy.y;
 
                 float flx = (lx+dx) / xres;
                 float fly = (ly+dy) / yres;
@@ -103,10 +119,11 @@ void Task::render ()
                 float fgy = (gy+dy) / job->film.yres;
 
                 Ray ray(cam->generate_ray(fgx, fgy,
-                                          frand(), frand()));
+                                          0,0));
+                                          // frand(), frand()));
 
                 debug::set(gx,gy,s);
-                Spectrum L = surf_integ->Li(ray, &job->scene);
+                Spectrum L = surf_integ->Li(ray, &job->scene, sample);
                 debug::add("L", L);
                 film->add_sample(flx, fly, L);
             }

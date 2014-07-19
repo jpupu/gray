@@ -35,6 +35,7 @@ public:
     /// Called by task itself.
     void task_finished (const Task&);
 
+    std::vector<int> seeds;
 private:
     bool wait_for_finish;
     std::vector<std::shared_ptr<Worker>> workers;

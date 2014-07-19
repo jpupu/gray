@@ -61,16 +61,22 @@ public:
     int rays;
     int terminated;
     int arrived;
+    int sampleid;
 
     PathIntegrator ()
         : rays(0), terminated(0), arrived(0)
     { }
 
-    virtual Spectrum Li (Ray& ray, const Scene* scene)
+    void allocate_samples (SampleGenerator& gen)
+    {
+        sampleid = gen.allocate_2d();
+    }
+
+    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample)
     {
         debug::up();
         constexpr float russian_p = 0.99;
-        if (frand() > russian_p) {
+        if (sample.sgen->randf() > russian_p) {
             terminated++;
             debug::down();
             return Spectrum(0.0f);
@@ -84,21 +90,29 @@ public:
         if (scene->intersect(ray, &isect)) {
             // The ray hit a point in the scene.
             // ----------------------------------
-            std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p);
+            std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p, 
+                                                             vec2(sample.sgen->randf(), sample.sgen->randf()));
             Transform tangent_from_world = build_tangent_from_world(isect.n);
             vec3 wo_t = tangent_from_world.vector(-ray.d);
             vec3 wi_t;
             float pdf;
 
-            Spectrum f = bsdf->sample(wo_t, &wi_t, glm::vec2(frand(),frand()), &pdf);
+            Spectrum f = bsdf->sample(wo_t, &wi_t, sample.get2d(), &pdf);
             vec3 wi = inverse(tangent_from_world).vector(wi_t);
 
             Ray newray = Ray(isect.p, wi);
-            Spectrum Li = this->Li(newray, scene);
+            Spectrum Li = this->Li(newray, scene, sample);
 
             // Light transport equation.
             L = isect.Le + f * Li * abs_cos_theta(wi_t) / pdf;
+            debug::add("Le", Le);
             debug::add("f", f);
+            debug::add("Li", Li);
+            debug::add("cos", abs_cos_theta(wi_t));
+            debug::add("pdf", pdf);
+            debug::add("f cos pdf", f * abs_cos_theta(wi_t) / pdf);
+            debug::add("isect.p", isect.p);
+            debug::add("ray.d", ray.d);
         }
         else {
             // The ray did not hit the scene.
@@ -107,7 +121,7 @@ public:
         }
 
         L = L / russian_p;
-        debug::add("L", L);
+        debug::add("-- L", L);
         debug::down();
         return L;
     }

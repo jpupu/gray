@@ -8,7 +8,7 @@ using std::make_shared;
 #include "mymath.hpp"
 #include <vector>
 #include "Transform.hpp"
-
+#include "random.hpp"
 
 typedef vec3 Spectrum;
 
@@ -146,7 +146,8 @@ class Material
 {
 public:
     virtual ~Material () {}
-    virtual std::unique_ptr<BSDF> get_bsdf (const vec3& p) const = 0;
+    // virtual std::unique_ptr<BSDF> get_bsdf (const vec3& p) const = 0;
+    virtual std::unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const = 0;
 };
 
 class Primitive
@@ -270,9 +271,11 @@ public:
 class SurfaceIntegrator
 {
 public:
+    virtual void allocate_samples (SampleGenerator&);
+
     /// The outgoing radiance along the ray,
     /// or the incoming radiance at the ray origin.
-    virtual Spectrum Li (Ray& ray, const Scene* scene) = 0;
+    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample) = 0;
 
     static SurfaceIntegrator* make ();
 };
