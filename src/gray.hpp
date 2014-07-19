@@ -271,8 +271,6 @@ public:
 class SurfaceIntegrator
 {
 public:
-    virtual void allocate_samples (SampleGenerator&);
-
     /// The outgoing radiance along the ray,
     /// or the incoming radiance at the ray origin.
     virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample) = 0;

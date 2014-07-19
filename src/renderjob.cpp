@@ -15,7 +15,7 @@ Job::Job (int threads, const Scene& scene, Film& film)
     seeds.resize(film.xres*film.xres);
     std::default_random_engine generator;
     generator.seed(14217);
-    for(int i = 0; i < seeds.size(); i++) {
+    for(unsigned int i = 0; i < seeds.size(); i++) {
         seeds[i] = generator();
     }
 }
@@ -103,10 +103,10 @@ void Task::render ()
             int gx = xofs + lx;
             int gy = yofs + ly;
             generator.seed(job->seeds[gx+gy*job->film.xres]);
-            sampler.generate(generator);
+            sampler.generate(&generator);
 
             for (int s = 0; s < spp; s++) {
-                Sample sample = sampler.next();
+                Sample sample = sampler.get(s);
                 // float dx = frand();
                 // float dy = frand();
                 vec2 dxy = sample.get2d();

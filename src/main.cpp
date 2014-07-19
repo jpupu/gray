@@ -61,22 +61,16 @@ public:
     int rays;
     int terminated;
     int arrived;
-    int sampleid;
 
     PathIntegrator ()
         : rays(0), terminated(0), arrived(0)
     { }
 
-    void allocate_samples (SampleGenerator& gen)
-    {
-        sampleid = gen.allocate_2d();
-    }
-
     virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample)
     {
         debug::up();
         constexpr float russian_p = 0.99;
-        if (sample.sgen->randf() > russian_p) {
+        if (sample.randf() > russian_p) {
             terminated++;
             debug::down();
             return Spectrum(0.0f);
@@ -90,8 +84,7 @@ public:
         if (scene->intersect(ray, &isect)) {
             // The ray hit a point in the scene.
             // ----------------------------------
-            std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p, 
-                                                             vec2(sample.sgen->randf(), sample.sgen->randf()));
+            std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p, sample.rand2f());
             Transform tangent_from_world = build_tangent_from_world(isect.n);
             vec3 wo_t = tangent_from_world.vector(-ray.d);
             vec3 wi_t;
