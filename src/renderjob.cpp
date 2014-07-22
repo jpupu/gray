@@ -106,7 +106,7 @@ void Task::render ()
             sampler.generate(&generator);
 
             for (int s = 0; s < spp; s++) {
-                Sample sample = sampler.get(s);
+                Sample& sample = sampler.get(s);
                 // float dx = frand();
                 // float dy = frand();
                 vec2 dxy = sample.get2d();
