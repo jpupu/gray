@@ -116,8 +116,6 @@ void Task::render ()
 
             for (int s = 0; s < spp; s++) {
                 Sample& sample = sampler->get(s);
-                // float dx = frand();
-                // float dy = frand();
                 vec2 dxy = sample.get2d();
                 float dx = dxy.x;
                 float dy = dxy.y;
@@ -127,9 +125,8 @@ void Task::render ()
                 float fgx = (gx+dx) / job->film.xres;
                 float fgy = (gy+dy) / job->film.yres;
 
-                Ray ray(cam->generate_ray(fgx, fgy,
-                                          0,0));
-                                          // frand(), frand()));
+                vec2 lens_sample = sample.get2d();
+                Ray ray(cam->generate_ray(fgx, fgy, lens_sample.x,lens_sample.y));
 
                 debug::set(gx,gy,s);
                 Spectrum L = surf_integ->Li(ray, &job->scene, sample);
