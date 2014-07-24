@@ -169,6 +169,7 @@ int main (int argc, char* argv[])
     unsigned int thread_count = 3;
     const char* input_filename = "test1.lisc";
     const char* output_filename = "out";
+    std::string sampler_name = "random";
 
     for (int i = 1; i < argc; ++i)
     {
@@ -199,6 +200,9 @@ int main (int argc, char* argv[])
             single_block_y = atol(argv[++i]);
             block_size = 1;
         }
+        else if (strcmp(argv[i], "--sampler") == 0) {
+            sampler_name = std::string(argv[++i]);
+        }
         else {
             input_filename = argv[i];
         }
@@ -226,7 +230,7 @@ int main (int argc, char* argv[])
             tasks.push_back(threaded_render::TaskDesc{
                             single_block_x, single_block_y,
                             block_size, block_size,
-                            spp});
+                            spp, sampler_name});
         }
         else {
             for (int by = 0; by < (resy + block_size-1) / block_size; by++) {
@@ -238,7 +242,7 @@ int main (int argc, char* argv[])
                     tasks.push_back(threaded_render::TaskDesc{
                                     xofs, yofs,
                                     xsize, ysize,
-                                    spp});
+                                    spp, sampler_name});
                 }
             }
         }

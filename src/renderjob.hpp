@@ -51,6 +51,7 @@ public:
     int xofs, yofs;
     int xres, yres;
     int spp;
+    std::string sampler_name;
 };
 
 class Task : public TaskDesc

@@ -15,19 +15,35 @@ public:
     SampleGenerator (int n2d, int samples_per_pixel);
 
     /// Generates sample sets for a new pixel.
-    void generate(std::mt19937* rng);
+    virtual void generate(std::mt19937* rng) = 0;
 
     Sample& get (int index) { return samples[index]; }
 
     float randf () { return distribution(*rng); }
     vec2 rand2f () { return vec2(distribution(*rng), distribution(*rng)); }
 
-private:
+protected:
     int spp;
     std::vector<Sample> samples;
     unsigned int n2d;
     std::mt19937* rng;
     std::uniform_real_distribution<float> distribution;
+};
+
+class SampleGeneratorRandom : public SampleGenerator
+{
+public:
+    SampleGeneratorRandom (int n2d, int samples_per_pixel);
+    void generate(std::mt19937* rng);
+};
+
+class SampleGeneratorStratified : public SampleGenerator
+{
+public:
+    SampleGeneratorStratified (int n2d, int samples_per_pixel);
+    void generate(std::mt19937* rng);
+private:
+    int dim;
 };
 
 
@@ -49,7 +65,8 @@ public:
     vec2 rand2f () { return vec2(distribution(*rng), distribution(*rng)); }
 
 private:
-    friend class SampleGenerator;
+    friend class SampleGeneratorRandom;
+    friend class SampleGeneratorStratified;
     std::vector<vec2> samples_2d;
     unsigned int index_2d;
     std::mt19937* rng;

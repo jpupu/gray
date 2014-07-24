@@ -94,7 +94,16 @@ Task::Task (Job* job, const TaskDesc& desc)
 void Task::render ()
 {
     std::unique_ptr<SurfaceIntegrator> surf_integ(SurfaceIntegrator::make());
-    SampleGenerator sampler(20, spp);
+    std::unique_ptr<SampleGenerator> sampler;
+    if (sampler_name == "random") {
+        sampler.reset(new SampleGeneratorRandom(20, spp));
+    }
+    else if (sampler_name == "stratified") {
+        sampler.reset(new SampleGeneratorStratified(20, spp));
+    }
+    else {
+        throw std::range_error("Bad sampler name.");
+    }
     std::mt19937 generator;
 
     Camera* cam = job->scene.camera.get();
@@ -103,10 +112,10 @@ void Task::render ()
             int gx = xofs + lx;
             int gy = yofs + ly;
             generator.seed(job->seeds[gx+gy*job->film.xres]);
-            sampler.generate(&generator);
+            sampler->generate(&generator);
 
             for (int s = 0; s < spp; s++) {
-                Sample& sample = sampler.get(s);
+                Sample& sample = sampler->get(s);
                 // float dx = frand();
                 // float dy = frand();
                 vec2 dxy = sample.get2d();
