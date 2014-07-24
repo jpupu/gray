@@ -1,0 +1,33 @@
+-- Light emitting sphere on a plane.
+
+(prim
+    (shape plane)
+    (diffuse (checker (rgb 1) (rgb .3 .3 .4)))
+    (translate <0 -1 0>))
+
+(prim
+    (shape rectangle)
+    (diffuse (checker (rgb 1) (rgb 1 .1 .05)))
+    (translate <-1 0 9>) (rotate 90 <1 0 0>) )
+
+(prim
+    (shape rectangle)
+    (diffuse (checker (rgb 1) (rgb .1 1 .1)))
+    (rotate 90 <1 0 0>))
+
+(prim
+    (shape rectangle)
+    (diffuse (checker (rgb 1) (rgb .1 .1 1)))
+    (translate <4.5 0 -30>) (rotate 90 <1 0 0>) )
+
+
+--(skylight solid (rgb 1))
+(skylight probe ../all_probes/uffizi0_probe.hdr)
+
+(camera thinlens
+    --(xform (translate <0 10 0>) (rotate -90 <1 0 0>))
+    (translate <0 0 10>) (rotate 10 <0 0 1>)
+    (focal_length 50)
+    (focus_distance 10)
+    (f_number 0.8)
+    (size <36 36>))
