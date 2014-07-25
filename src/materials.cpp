@@ -390,6 +390,26 @@ private:
     Spectrum A, B;
 };
 
+class Grid3D : public Texture
+{
+public:
+    Grid3D (const Spectrum& a, const Spectrum& b, float width = .05)
+        : A(a), B(b), width(width)
+    { }
+
+    Spectrum sample (const vec2& uv, const vec3& p) const
+    {
+        return ((p.x - floor(p.x) < width) ||
+                (p.y - floor(p.y) < width) ||
+                (p.z - floor(p.z) < width)) ? B : A;
+    }
+
+private:
+    Spectrum A, B;
+    float width;
+
+};
+
 class Diffuse : public Material
 {
 public:
@@ -503,6 +523,12 @@ bool evaluate_texture (Value& val, const std::string& name, List& args)
         Spectrum a = *pop<Spectrum>(args);
         Spectrum b = *pop<Spectrum>(args);
         T = make_shared<Checkers3D>(a, b);
+    }
+    else if (name == "grid") {
+        float w = *pop<double>(args);
+        Spectrum a = *pop<Spectrum>(args);
+        Spectrum b = *pop<Spectrum>(args);
+        T = make_shared<Grid3D>(a, b, w);
     }
     else if (name == "solid") {
         Spectrum a = *pop<Spectrum>(args);
