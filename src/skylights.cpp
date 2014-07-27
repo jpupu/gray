@@ -34,6 +34,22 @@ public:
     }
 };
 
+class ColorSkylight : public Skylight
+{
+public:
+    ColorSkylight ()
+    { }
+
+    Spectrum sample (const vec3& dir) const
+    {
+        float theta = acosf(abs_cos_theta(dir));
+        float phi = acosf(cos_phi(dir));
+        bool vgrid = fmod(theta+2*M_PI, M_PI/16) > .01;
+        bool hgrid = fmod(phi+2*M_PI, M_PI/8) > .01;
+        return (dir + vec3(1.0f)) * .5f * float(vgrid*hgrid);
+    }
+};
+
 class DebevecSkylight : public Skylight
 {
 public:
@@ -93,6 +109,9 @@ void evaluate_skylight (Value& val, List& args)
     else if (name == "cosine") {
         auto R = *pop<Spectrum>(args);
         sky = new CosineSkylight(R);
+    }
+    else if (name == "color") {
+        sky = new ColorSkylight();
     }
     else if (name == "probe") {
         auto file = *pop<std::string>(args);
