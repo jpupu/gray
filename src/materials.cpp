@@ -233,6 +233,7 @@ public:
 
         // Check for total internal reflection
         if (sin2_i >= 1.0) {
+            debug::add("TIR", sin2_i);
             return Spectrum(0);
         }
 
@@ -514,6 +515,22 @@ public:
 
 };
 
+class NonReflGlass : public Material
+{
+public:
+    NonReflGlass (const Spectrum& R)
+        : R(R)
+    { }
+
+    Spectrum R;
+
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
+    {
+        return unique_ptr<BSDF>(new SpecularTransmission(R, make_shared<FresnelDielectric>(1.0f, 1.3f)));
+    }
+
+};
+
 
 
 bool evaluate_texture (Value& val, const std::string& name, List& args)
@@ -583,6 +600,10 @@ bool evaluate_material (Value& val, const std::string& name, List& args)
     else if (name == "glass") {
         Spectrum R = *pop<Spectrum>(args);
         M = make_shared<Glass>(R);
+    }
+    else if (name == "glass_non_ref") {
+        Spectrum R = *pop<Spectrum>(args);
+        M = make_shared<NonReflGlass>(R);
     }
     else {
         return false;
