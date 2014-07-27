@@ -55,6 +55,8 @@ namespace debug {
 //     }
 // };
 
+
+
 class PathIntegrator : public SurfaceIntegrator
 {
 public:
@@ -66,9 +68,14 @@ public:
         : rays(0), terminated(0), arrived(0)
     { }
 
-    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample)
+    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample, const Isect* prev)
     {
         debug::up();
+
+        debug::add("------------------------------------------", 0);
+        debug::add("Li: ray.o", ray.o);
+        debug::add("Li: ray.d", ray.d);
+
         constexpr float russian_p = 0.99;
         if (sample.randf() > russian_p) {
             terminated++;
@@ -81,7 +88,11 @@ public:
         Spectrum L;
         Spectrum Le(0.0f);
         Isect isect;
-        if (scene->intersect(ray, &isect)) {
+        if (scene->intersect(ray, &isect, prev)) {
+            debug::add("Li: ray.t", ray.tmax);
+            debug::add("Li: isect.p", isect.p);
+            debug::add("Li: isect.n", isect.n);
+
             // The ray hit a point in the scene.
             // ----------------------------------
             std::unique_ptr<BSDF> bsdf = isect.mat->get_bsdf(isect.p, sample.rand2f());
@@ -89,12 +100,16 @@ public:
             vec3 wo_t = tangent_from_world.vector(-ray.d);
             vec3 wi_t;
             float pdf;
+            debug::add("Li: wo_t", wo_t);
+            debug::add("Li: wi_t", wi_t);
 
             Spectrum f = bsdf->sample(wo_t, &wi_t, sample.get2d(), &pdf);
             vec3 wi = inverse(tangent_from_world).vector(wi_t);
 
+            debug::add("Li: wo", -ray.d);
+            debug::add("Li: wi", wi);
             Ray newray = Ray(isect.p, wi);
-            Spectrum Li = this->Li(newray, scene, sample);
+            Spectrum Li = this->Li(newray, scene, sample, &isect);
 
             // Light transport equation.
             L = isect.Le + f * Li * abs_cos_theta(wi_t) / pdf;

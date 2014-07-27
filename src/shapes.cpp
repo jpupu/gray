@@ -51,14 +51,16 @@ bool BBox::intersect (const Ray& ray) const
 class Sphere : public Shape
 {
 public:
-    bool intersect (Ray& r, Isect* isect);
+    bool intersect (Ray& r, Isect* isect, bool self, bool inside_self);
 
     BBox get_bbox () const { return BBox(vec3(-1), vec3(1)); }
 };
 
 
-bool Sphere::intersect (Ray& ray, Isect* isect)
+bool Sphere::intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
 {
+    if (self && !inside_self) return false;
+
     const vec3& o = ray.o;
     const vec3& d = ray.d;
 
@@ -77,7 +79,14 @@ bool Sphere::intersect (Ray& ray, Isect* isect)
     float t1 = (-B + sqrtf(discrim)) / (2*A);
     if (t0 > t1) std::swap(t0, t1);
 
-    float t = (t0 >= ray.tmin) ? t0 : t1;
+    float t;
+    if (!self) {
+        t = (t0 >= ray.tmin) ? t0 : t1;
+    }
+    else {
+        t = inside_self ? t1 : t0;
+    }
+
     if (t < ray.tmin || t > ray.tmax) return false;
 
     ray.tmax = t;
@@ -91,8 +100,10 @@ bool Sphere::intersect (Ray& ray, Isect* isect)
 class Plane : public Shape
 {
 public:
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
+        if (self) return false; // A plane cannot be hit twice by the same ray.
+
         if (ray.d.y == 0) return false;
 
         float t = -ray.o.y / ray.d.y;
@@ -117,8 +128,10 @@ public:
 class Rectangle : public Shape
 {
 public:
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
+        if (self) return false; // A plane cannot be hit twice by the same ray.
+
         if (ray.d.y == 0) return false;
 
         float t = -ray.o.y / ray.d.y;
@@ -143,7 +156,7 @@ public:
 class Box : public Shape
 {
 public:
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
         // float tt[7];
         // for (int k = 0; k < 3; k++) {
@@ -189,8 +202,16 @@ public:
         if (tzmax < tmax) tmax = tzmax;
         if ((tmin > ray.tmax) || (tmax < ray.tmin)) return false;
 
-        float t = tmin;
-        if (tmin < ray.tmin) t = tmax;
+        // float t = tmin;
+        // if (tmin < ray.tmin) t = tmax;
+        float t;
+        if (!self) {
+            t = (tmin >= ray.tmin) ? tmin : tmax;
+        }
+        else {
+            t = inside_self ? tmax : tmin;
+        }
+        if (t < ray.tmin || t > ray.tmax) return false;
 
         ray.tmax = t;
         isect->p = ray.o + ray.d * t;
@@ -213,8 +234,10 @@ class Triangle : public Shape
 public:
     vec3 v[3];
 
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
+        if (self) return false; // A plane cannot be hit twice by the same ray.
+
         constexpr float EPSILON = 1e-6f;
         // Möller–Trumbore intersection algorithm
         // http://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
@@ -278,16 +301,16 @@ public:
         return normals[vertex_indices[face*3+v]];
     }
 
-    virtual bool intersect (Ray& ray, Isect* isect)
+    virtual bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
         bool hit = false;
         for (unsigned int i = 0; i < vertex_indices.size()/3; ++i) {
-            hit |= intersect_triangle(i, ray, isect);
+            hit |= intersect_triangle(i, ray, isect, self, inside_self);
         }
         return hit;
     }
 
-    bool intersect_triangle (int triangle, Ray& ray, Isect* isect)
+    bool intersect_triangle (int triangle, Ray& ray, Isect* isect, bool self, bool inside_self)
     {
         const vec3& vert0 = vertex(triangle, 0);
         const vec3& vert1 = vertex(triangle, 1);
@@ -321,6 +344,20 @@ public:
         float t = dot(e2, qvec) * inv_det;
         if (t < ray.tmin || t > ray.tmax) return false;
 
+        // Normal.
+        vec3 n_geom = normalize(cross(e1, e2));
+
+        // Self-shadowing.
+        if (self) {
+            bool new_inside = ( dot(ray.d, n_geom) > 0 );
+            debug::add("n_geom", n_geom);
+            debug::add("dot", dot(ray.d, n_geom));
+            debug::add("new inside", new_inside);
+            if (inside_self && !new_inside) return false;
+            if (!inside_self && new_inside) return false;
+        }
+        debug::add("triangle", triangle);
+
         // Hit.
         ray.tmax = t;
         isect->p = ray.o + t * ray.d;
@@ -329,10 +366,16 @@ public:
             const vec3& n1 = normal(triangle, 1);
             const vec3& n2 = normal(triangle, 2);
             vec3 n = n0 * (1-u-v) + n1 * u + n2 * v;
+            debug::add("n0", n0);
+            debug::add("n1", n1);
+            debug::add("n2", n2);
+            debug::add("u", u);
+            debug::add("v", v);
+            debug::add("normal", n);
             isect->n = normalize(n);
         }
         else {
-            isect->n = normalize(cross(e1, e2));
+            isect->n = n_geom;
         }
 
         return true;
@@ -383,7 +426,12 @@ public:
             }
         }
         for (size_t i = 0; i < normals.size(); i++) {
-            normals[i] = normalize(normals[i]);
+            if (normals[i] != vec3(0)) {
+                normals[i] = normalize(normals[i]);
+            }
+            else {
+                normals[i] = vec3(0,1,0); // avoid NaN
+            }
         }
     }
 };
@@ -407,15 +455,15 @@ public:
         : mesh(m)
     { }
 
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
         if (!bbox.intersect(ray)) return false;
         bool hit = false;
         for (auto* n : children) {
-            hit |= n->intersect(ray, isect);
+            hit |= n->intersect(ray, isect, self, inside_self);
         }
         for (unsigned int i = 0; i < faces.size(); i++) {
-            hit |= mesh->intersect_triangle(faces[i], ray, isect);
+            hit |= mesh->intersect_triangle(faces[i], ray, isect, self, inside_self);
         }
         return hit;
     }
@@ -491,9 +539,9 @@ class BVHMesh : public Mesh
 {
 public:
     BVHNode root;
-    bool intersect (Ray& ray, Isect* isect)
+    bool intersect (Ray& ray, Isect* isect, bool self, bool inside_self)
     {
-        return root.intersect(ray, isect);
+        return root.intersect(ray, isect, self, inside_self);
     }
 
 };
