@@ -78,14 +78,12 @@ namespace debug {
 
 struct Ray
 {
-    static constexpr float epsilon = 1e-4f;
-
     vec3 o;
     vec3 d;
     float tmin, tmax;
 
     Ray (const vec3& o, const vec3& d,
-         float tmin = epsilon, float tmax = INFINITY)
+         float tmin = 0, float tmax = INFINITY)
         : o(o), d(d), tmin(tmin), tmax(tmax)
     { }
 
@@ -110,6 +108,7 @@ public:
 };
 
 class Material;
+class Primitive;
 
 struct Isect
 {
@@ -117,6 +116,7 @@ struct Isect
     vec3 n;
     Material* mat;
     Spectrum Le; // this is oversimplified
+    const Primitive* prim;
 };
 
 
@@ -124,7 +124,14 @@ class Shape
 {
 public:
 	virtual ~Shape () {}
-    virtual bool intersect (Ray& r, Isect* isect) = 0;
+    /// The parameters self and inside_self are used to prevent surface acne.
+    ///
+    /// @par self   Set to true iff the primitive of the previous intersection is
+    ///             the same as is being tested now.
+    /// @par inside_self    Set to true iff self is true and r was shot from
+    ///                     the previous intersection in a direction opposite
+    ///                     the surface normal.
+    virtual bool intersect (Ray& r, Isect* isect, bool self, bool inside_self) = 0;
 
     virtual BBox get_bbox () const = 0;
 };
@@ -154,7 +161,9 @@ class Primitive
 {
 public:
     virtual ~Primitive () {}
-    virtual bool intersect (Ray& r, Isect* isect) const = 0;
+    /// @par prev The previous intersection (nullptr if r is a camera ray).
+    ///           Used in surface acne prevention.
+    virtual bool intersect (Ray& r, Isect* isect, const Isect* prev) const = 0;
 };
 
 
@@ -169,11 +178,11 @@ public:
         prims.push_back(p);
     }
 
-    bool intersect (Ray& r, Isect* isect) const
+    bool intersect (Ray& r, Isect* isect, const Isect* prev) const
     {
         bool hit = false;
         for (auto& prim : prims) {
-            hit |= prim->intersect(r, isect);
+            hit |= prim->intersect(r, isect, prev);
         }
         return hit;
     }
@@ -188,20 +197,31 @@ public:
     mutable Transform prim_from_world;
     Spectrum Le;
 
-    bool intersect (Ray& r, Isect* isect) const
+    bool intersect (Ray& r, Isect* isect, const Isect* prev) const
     {
         prim_from_world = inverse(world_from_prim); // FIXME: dont do this every time!
 
         Ray ro = r.transform(prim_from_world);
-        if (!shape->intersect(ro, isect)) {
-            return false;
+        Isect is2;
+
+        if (prev && prev->prim == this) {
+            bool inside = ( dot(r.d, prev->n) < 0 );
+            if (!shape->intersect(ro, &is2, true, inside)) {
+                return false;
+            }
+        }
+        else {
+            if (!shape->intersect(ro, &is2, false, false)) {
+                return false;
+            }
         }
 
         r.tmax = ro.tmax;
-        isect->p = world_from_prim.point(isect->p);
-        isect->n = normalize(world_from_prim.normal(isect->n));
+        isect->p = world_from_prim.point(is2.p);
+        isect->n = normalize(world_from_prim.normal(is2.n));
         isect->mat = mat.get();
         isect->Le = Le;
+        isect->prim = this;
         return true;
     }
 };
@@ -262,9 +282,9 @@ public:
     shared_ptr<Camera> camera;
     shared_ptr<Skylight> skylight;
 
-    bool intersect (Ray& ray, Isect* isect) const
+    bool intersect (Ray& ray, Isect* isect, const Isect* prev) const
     {
-        return primitives->intersect(ray, isect);
+        return primitives->intersect(ray, isect, prev);
     }
 };
 
@@ -273,7 +293,7 @@ class SurfaceIntegrator
 public:
     /// The outgoing radiance along the ray,
     /// or the incoming radiance at the ray origin.
-    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample) = 0;
+    virtual Spectrum Li (Ray& ray, const Scene* scene, Sample& sample, const Isect* prev=nullptr) = 0;
 
     static SurfaceIntegrator* make ();
 };
