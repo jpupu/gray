@@ -104,6 +104,11 @@ public:
             debug::add("Li: wi_t", wi_t);
 
             Spectrum f = bsdf->sample(wo_t, &wi_t, sample.get2d(), &pdf);
+            if (f == Spectrum(0,0,0)) {
+                // e.g. transmission when total internal reflection occurs
+                debug::down();
+                return Spectrum(0,0,0);
+            }
             vec3 wi = inverse(tangent_from_world).vector(wi_t);
 
             debug::add("Li: wo", -ray.d);
