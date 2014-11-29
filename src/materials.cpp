@@ -315,6 +315,53 @@ public:
     }
 };
 
+class TorranceSparrow : public BSDF
+{
+public:
+    TorranceSparrow (const Spectrum& rho)
+        : rho(rho)
+    { }
+
+    /// reflectance
+    Spectrum rho;
+
+    virtual Spectrum sample (const vec3& wo, vec3* wi, const vec2& uv, float* pdf) const
+    {
+        // PBRT 2nd ed. p.452
+        // fr(p, w_o, w_i) = ___D(w_h) G(w_o,w_i) Fr(w_o)___
+        //                      4 cos theta_o cos theta_i
+        // D(w) = probability of a microfacet with normal w
+        // G(w_o,w_i) = the fraction of microfacets masked or shadowed
+
+        // PBRT 2nd ed. p.455
+        // G(w_o,w_i) for microfacets arranged along infinitely long V-shaped grooves is
+        // 
+        // G(w_o,w_i) = min(1, min( __2(n . w_h)(n . w_o)__ , __2(n . w_h)(n . w_i)__ ) )
+        //                                 w_o . w_h                 w_o . w_h
+        //            = min(1, min( __2 wh.z wo.z__ , __2 wh.z wi.z__ ) )
+        //                              wo . wh           wo . wh
+        //            = min(1, 2*wh.z/(wo . wh) * min(wo.z, wi.z))
+        
+        // Reflected ray
+        // *wi = normalize(vec3(-wo.x, -wo.y, wo.z)+.1f*vec3(frand()-.5,frand()-.5,frand()-.5));//uniform_sample_hemisphere(uv);
+        *wi = uniform_sample_hemisphere(uv);
+        *pdf = uniform_hemisphere_pdf();
+
+        // Half angle.
+        vec3 wh = normalize(*wi + wo);// * .5f;
+
+        // Microfacet distribution.
+        float e = 140;
+        float D = (e+2) / (2*M_PI) * powf(abs_cos_theta(wh), e);
+
+        float G = std::min(1.0f, 2*wh.z/dot(wo,wh) * std::min(wo.z, wi->z));
+        // placeholder
+        float F = 1;//abs_cos_theta(wh); // ???
+
+        return rho * (D * G * F / (4  * abs_cos_theta(wo) * abs_cos_theta(*wi)));
+
+    }
+};
 
 
 
@@ -465,6 +512,23 @@ public:
 
 };
 
+class GlossyMirror : public Material
+{
+public:
+    GlossyMirror (const Spectrum& R)
+        : R(R)
+    { }
+
+    Spectrum R;
+
+    virtual unique_ptr<BSDF> get_bsdf (const vec3& p, const vec2& u) const
+    {
+    //    return unique_ptr<BSDF>(new SpecularReflection(R, make_shared<FresnelOne>()));
+        return unique_ptr<BSDF>(new TorranceSparrow(R));
+    }
+
+};
+
 class Metal : public Material
 {
 public:
@@ -596,6 +660,10 @@ bool evaluate_material (Value& val, const std::string& name, List& args)
         Spectrum n = *pop<Spectrum>(args);
         Spectrum k = *pop<Spectrum>(args);
         M = make_shared<Metal>(n, k);
+    }
+    else if (name == "glossy-mirror") {
+        Spectrum R = *pop<Spectrum>(args);
+        M = make_shared<GlossyMirror>(R);
     }
     else if (name == "glass") {
         Spectrum R = *pop<Spectrum>(args);
